@@ -1,0 +1,1 @@
+-- Dane developerskie dodamy razem z ekranem logowania i testami RLS.

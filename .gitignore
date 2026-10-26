@@ -1,0 +1,13 @@
+node_modules/
+dist/
+work/npm-cache/
+outputs/matches-*.json
+.DS_Store
+.next/
+.env
+.env.local
+.env.*.local
+supabase/.branches/
+supabase/.temp/
+coverage/
+outputs/
