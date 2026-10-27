@@ -17,6 +17,8 @@ Kryterium ukończenia: po jednorazowym setupie `npm run dev` i lokalna baza uruc
 
 ## Etap 2 — logowanie
 
+Status: ukończony 2026-10-26. Zweryfikowano logowanie, odświeżanie, wylogowanie i RLS na lokalnej bazie.
+
 - klient Supabase dla serwera i przeglądarki,
 - logowanie e-mail/hasło,
 - wylogowanie i odświeżanie sesji,
@@ -27,6 +29,8 @@ Kryterium ukończenia: po jednorazowym setupie `npm run dev` i lokalna baza uruc
 Kryterium ukończenia: właściciel loguje się lokalnie i widzi chroniony ekran; inny użytkownik nie odczytuje jego danych.
 
 ## Etap 3 — zapis importu do bazy
+
+Status: ukończony 2026-10-26. Test lokalnej bazy potwierdził upsert bez duplikatów i rejestrację błędów.
 
 - `SupabaseRepository` zgodne z `CollectionRepository`,
 - upsert wydarzeń po `(provider, external_id)`,
@@ -40,6 +44,8 @@ Kryterium ukończenia: ponowienie tego samego importu nie tworzy duplikatów, a 
 
 ## Etap 4 — lista wydarzeń
 
+Status: ukończony 2026-10-26. Zweryfikowano listę, filtr i statystyki w przeglądarce na rzeczywistym imporcie.
+
 - ekran dzisiejszych wydarzeń,
 - sortowanie według godziny,
 - filtry ligi, drużyny i statusu,
@@ -51,6 +57,8 @@ Kryterium ukończenia: użytkownik może sprawnie przejrzeć wszystkie mecze dni
 
 ## Etap 5 — budowanie kuponu
 
+Status: ukończony 2026-10-26. Testy bazy potwierdziły atomowość, niezmienność kursów i autoryzację; zapis i odczyt sprawdzono w przeglądarce.
+
 - podręczny kupon na ekranie wydarzeń,
 - jeden wybór na wydarzenie,
 - automatyczny kurs łączny,
@@ -61,6 +69,8 @@ Kryterium ukończenia: użytkownik może sprawnie przejrzeć wszystkie mecze dni
 Kryterium ukończenia: zapisany kupon zachowuje swoje kursy nawet po zmianie kursów wydarzenia.
 
 ## Etap 6 — wyniki i rozliczanie
+
+Status: ukończony 2026-10-26. Zweryfikowano wynik regulaminowy z rzeczywistego API, 14 testów jednostkowych oraz testy lokalnej bazy wszystkich typów, zwrotów, braku wyniku i równoległego ponowienia zadania. Lint, typecheck i build przechodzą.
 
 - ponowne pobieranie niezakończonych wydarzeń,
 - zapis wyniku regulaminowego czasu gry,

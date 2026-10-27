@@ -35,6 +35,8 @@ Project Nico to prywatna aplikacja webowa pomagająca przeglądać wydarzenia pi
 - Zatrzymanie bazy: `npm run db:stop`
 - Reset bazy i ponowne migracje: `npm run db:reset`
 - Pobranie meczów do JSON-a: `npm run collect`
+- Rozliczenie wyników: `npm run results`
+- Testy lokalnego Auth, RLS i rozliczeń: `npm run test:db`
 - Test jednego meczu: `TARGET_DATE=2026-10-27 MAX_MATCHES=1 npm run collect`
 - Kontrola jakości: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`
 - Domyślna strefa czasu: `Europe/Warsaw`
@@ -152,12 +154,20 @@ Oba identyfikatory pochodzą z endpointu listy meczów. Endpoint obecnie zwraca 
 
 Na podstawie całej zwróconej, zakończonej historii skrypt oblicza także `h2h.summary`: liczbę spotkań, zwycięstwa obecnego gospodarza, remisy, zwycięstwa obecnego gościa oraz gole obu stron. Przy obliczeniach uwzględnia, że w historycznym meczu drużyny mogły występować w odwrotnych rolach.
 
+### 6. Szczegóły i wyniki wydarzenia
+
+`GET /matches/{MATCH_ID}`
+
+Proces `npm run results` pobiera tym endpointem każde nierozliczone wydarzenie, także przy zmianie terminu. `startTime` aktualizuje termin, a `status` stan spotkania (`not_started` → `scheduled`, stany połówek → `live`, `finished`, `postponed`, `cancelled`; nieznane stany pozostają nierozstrzygnięte).
+
+W `attributes` wynik regulaminowy znajduje się w pozycjach o `type` równym `home_regular_time_score` i `away_regular_time_score`; `value` jest liczbą lub ciągiem liczbowym. Nie używamy dogrywki ani karnych. Przy braku tych atrybutów ogólny `homeScore` / `awayScore` jest jednoznaczny wyłącznie przy jawnym `withOvertime: false`. Brak pełnego, poprawnego wyniku oznacza oczekiwanie na następne pobranie. Anulowanie daje zwrot; przełożenie pozostawia pozycje oczekujące.
+
 ## Przepływ danych
 
 1. Lista meczów dostarcza ID spotkania, drużyn, rozgrywek i sezonu.
 2. Dla każdego meczu pobierane są równolegle kursy, obie historie drużyn, H2H i potrzebne tabele.
 3. Dane są normalizowane do typów z `src/lib/collector/types.ts`.
-4. Obecny `JsonRepository` zapisuje dokument atomowo; w etapie 3 dojdzie `SupabaseRepository` wykonujące upsert.
+4. Domyślny `SupabaseRepository` zapisuje dokument pojedynczym upsertem; opcjonalny `JsonRepository` zapisuje JSON atomowo. Import działa dla bieżącego dnia Europe/Warsaw, o ile nie podano TARGET_DATE.
 
 ## Ważne zasady przy rozwijaniu projektu
 

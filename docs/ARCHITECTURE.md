@@ -21,7 +21,7 @@ Supabase zapewnia PostgreSQL i Auth. Lokalnie działa w kontenerach Dockera, dzi
 
 ### Importer
 
-Importer w `scripts/collect.ts` korzysta z klienta w `src/lib/collector`. To jedyny element podstawowego workflow, który wymaga dostępu do internetu. Docelowo zapisuje dane przez implementację `CollectionRepository` do Supabase; zapis JSON pozostaje narzędziem diagnostycznym.
+Importer w `scripts/collect.ts` korzysta z klienta w `src/lib/collector`. To jedyny element podstawowego workflow, który wymaga dostępu do internetu. Zapisuje dane przez implementację `CollectionRepository` (`SupabaseRepository`) do Supabase; zapis JSON pozostaje narzędziem diagnostycznym.
 
 ### Harmonogram
 
@@ -71,3 +71,16 @@ Po jednorazowym wykonaniu instalacji oraz pobraniu obrazów Supabase:
 - `npm run collect` nadal wymaga internetu.
 
 Pełna reinstalacja zależności lub pierwsze pobranie obrazów Dockera wymaga sieci. Zwykłe kodowanie, uruchamianie aplikacji, migracje i testy działają offline.
+
+## Zaimplementowane etapy 2–6
+
+- Klient SSR używa ciasteczek; `src/proxy.ts` odświeża sesję i przekazuje nowe ciasteczka do renderowania i przeglądarki. Trasy oraz każda akcja ponownie weryfikują użytkownika. Dane czytamy klientem z kluczem publicznym z obowiązującym RLS.
+- Zwykłe operacje nie używają klucza sekretnego. `scripts/admin.ts` tworzy klienta administracyjnego wyłącznie dla procesów importu, wyników, tworzenia konta i testów lokalnej bazy.
+- Import całego dokumentu jest pojedynczym upsertem. Dane opisowe i kursy mogą się zmieniać; trigger chroni status i wynik już rozliczonego wydarzenia przed cofnięciem przez kolejny import.
+- `save_coupon` w jednej transakcji sprawdza właściciela, wersję roboczą, unikalność wydarzeń i dostępność spotkań. Pozycja zachowuje kurs wyświetlony w momencie dodania. Przy edycji tego samego typu SQL zachowuje wcześniej zapisany kurs niezależnie od danych nadesłanych przez interfejs. Bezpośredni INSERT/UPDATE kuponów oraz mutacje pozycji są odebrane roli authenticated; pozostają odczyt przez RLS i usuwanie własnego kuponu.
+- `settle_event` jest dostępne tylko roli service_role. Blokuje powiązane kupony, potem wydarzenie; wynik, pozycje i statusy kuponów zmieniają się atomowo. Równoległe i powtórzone wywołania nie rozliczają wydarzenia drugi raz. Wersje robocze pozostają nierozliczone.
+- Anulowanie daje zwrot z efektywnym kursem 1; przełożenie i brak jednoznacznego wyniku pozostają oczekujące. Wynik pochodzi z regulaminowego czasu, bez dogrywki i karnych. Niejednoznaczny wynik nie jest zgadywany.
+- `scripts/results.ts` odczytuje wszystkie nierozliczone wydarzenia stronicami przed rozpoczęciem aktualizacji. Pobiera szczegóły po ID, więc potrafi wykryć nowy termin wydarzenia. Błędy częściowe są rejestrowane z licznikami postępu, a kolejne uruchomienie podejmie brakujące wydarzenia.
+- Dzień i jego granice wyznaczamy w Europe/Warsaw, również w dniach zmiany czasu. Odczyt wydarzeń i kuponów jest stronicowany, aby limit odpowiedzi API bazy nie obcinał listy.
+
+Automatyzacja, wdrożenie i utrzymanie z etapów 7–8 pozostają poza zakresem tej implementacji.

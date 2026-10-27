@@ -21,6 +21,8 @@ export interface ApiMatch {
   startTime: string;
   normalizedSeason: number;
   status: string;
+  withOvertime?: boolean;
+  attributes?: { type: string; value: string | number | null }[];
   competition: Competition;
   bracketRound?: { displayName: string } | null;
   homeParticipant: Participant;
@@ -60,6 +62,7 @@ export interface CollectedTeam {
 }
 
 export interface CollectedMatch {
+  status: string;
   match_id: number;
   kickoff: string;
   competition: string;

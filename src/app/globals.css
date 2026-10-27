@@ -121,3 +121,80 @@ h1 {
     grid-template-columns: 1fr;
   }
 }
+
+.stack { display: grid; gap: 18px; }
+.login { max-width: 520px; }
+.login h1 { font-size: 3rem; }
+label { display: grid; gap: 8px; color: var(--muted); }
+input, select, button { font: inherit; border: 1px solid var(--border); border-radius: 9px; padding: 12px; }
+input, select { background: var(--surface); color: var(--text); min-width: 0; }
+button { background: var(--accent); color: #111; cursor: pointer; font-weight: 700; }
+button:disabled { opacity: .45; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.muted { color: var(--muted); line-height: 1.6; }
+.app-shell { width: min(1320px, calc(100% - 40px)); padding-top: 28px; }
+a { color: inherit; text-decoration: none; }
+.topbar { display: flex; justify-content: space-between; align-items: center; padding-bottom: 28px; border-bottom: 1px solid var(--border); gap: 16px; }
+.brand { font-weight: 900; font-size: 1.7rem; letter-spacing: -.05em; }
+.brand span { display: block; font-weight: 400; font-size: .75rem; color: var(--muted); letter-spacing: 0; margin-top: 4px; }
+.secondary { color: var(--text); background: var(--surface); }
+.page-heading { display: flex; align-items: end; justify-content: space-between; gap: 30px; margin: 48px 0 32px; }
+.page-heading h1 { font-size: clamp(2rem, 5vw, 4rem); line-height: 1.05; }
+.page-heading .eyebrow { margin-bottom: 14px; }
+.date-form { display: flex; align-items: end; gap: 10px; }
+.filters { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 24px 0; }
+.filters label, .date-form label { font-size: .8rem; }
+.event-list { display: grid; gap: 16px; }
+.event-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 20px; }
+.event-meta { display: flex; justify-content: space-between; gap: 10px; font-size: .78rem; color: var(--muted); }
+.event-main { display: flex; align-items: center; gap: 20px; padding: 14px 0; }
+.event-main time { color: var(--accent); font-variant-numeric: tabular-nums; }
+.event-main h3 { font-size: 1.1rem; flex: 1; line-height: 1.5; margin: 0; }
+.versus { color: var(--muted); }
+.odds-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+.odd { display: flex; justify-content: space-between; gap: 6px; padding: 12px; background: #1a2226; border: 1px solid var(--border); border-radius: 8px; font-size: .9rem; }
+.odd span { color: var(--muted); }
+.statistics { border-top: 1px solid var(--border); margin-top: 18px; padding-top: 14px; font-size: .85rem; }
+summary { cursor: pointer; color: var(--muted); }
+.stats-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; }
+.stats-grid h4 { font-size: 1rem; }
+.history { padding: 0; list-style: none; }
+.history li { padding: 12px 0; border-bottom: 1px solid var(--border); line-height: 1.6; }
+.history li > span { font-size: .7rem; color: var(--muted); }
+.history strong { white-space: nowrap; }
+.notice, .empty { padding: 20px; border: 1px solid var(--border); border-radius: 12px; background: var(--surface); color: var(--muted); line-height: 1.6; }
+.empty { text-align: center; padding: 50px 20px; }
+.error-title { font-size: 2.4rem; }
+@media (max-width: 900px) { .stats-grid { grid-template-columns: 1fr; } .page-heading { display: block; } .date-form { margin-top: 24px; } }
+@media (max-width: 560px) { .filters { grid-template-columns: 1fr; } .odd { flex-direction: column; align-items: center; padding: 10px 4px; } .event-card { padding: 14px; } .event-main { gap: 12px; } .event-main h3 { font-size: 1rem; } .app-shell { width: calc(100% - 24px); } }
+.topbar nav { display: flex; align-items: center; gap: 24px; font-size: .9rem; }
+.workspace { display: grid; grid-template-columns: minmax(0, 1fr) 320px; align-items: start; gap: 28px; }
+.events-panel { min-width: 0; }
+.coupon-editor { position: sticky; top: 24px; margin-top: 24px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); padding: 24px; }
+.coupon-editor h2 { font-size: 1.5rem; line-height: 1.2; margin: 0; letter-spacing: -.03em; }
+.coupon-editor .eyebrow { font-size: .68rem; margin-bottom: 16px; }
+.draft-items { list-style: none; padding: 0; font-size: .85rem; }
+.draft-items li { border-top: 1px solid var(--border); padding: 16px 0; }
+.draft-items strong { line-height: 1.5; }
+.draft-line, .combined { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.draft-line { color: var(--muted); margin-top: 8px; }
+.combined { padding: 18px 0 24px; border-top: 1px solid var(--border); }
+.combined strong { font-size: 1.8rem; color: var(--accent); }
+.text-button { border: 0; padding: 4px 0; background: transparent; color: var(--muted); font-size: .8rem; text-decoration: underline; font-weight: 400; }
+.odd { color: var(--text); font-weight: 400; }
+.odd[aria-pressed="true"] { border-color: var(--accent); background: #31401c; }
+.small { font-size: .76rem; }
+.inline-link { color: var(--accent); font-size: .85rem; }
+.success, .result-won { color: var(--accent); }
+.result-lost { color: #ff9f9f; }
+.result-void { color: #f4cb7c; }
+.coupon-list { display: grid; gap: 24px; }
+.saved-items { list-style: none; padding: 0; }
+.saved-items li { display: flex; gap: 24px; align-items: center; padding: 16px 0; border-top: 1px solid var(--border); font-size: .9rem; }
+.saved-items li > div { flex: 1; display: grid; gap: 7px; }
+.coupon-actions, .delete-form { display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+.coupon-actions { justify-content: space-between; }
+.button-link { background: var(--accent); color: #111; border-radius: 9px; padding: 14px 20px; font-weight: 700; display: inline-block; white-space: nowrap; }
+@media (max-width: 1000px) { .workspace { grid-template-columns: minmax(0, 1fr) 280px; gap: 16px; } .coupon-editor { padding: 18px; } }
+@media (max-width: 760px) { .workspace { grid-template-columns: 1fr; } .coupon-editor { position: static; } .topbar nav { gap: 12px; flex-wrap: wrap; justify-content: end; } .saved-items li { flex-wrap: wrap; gap: 12px; } .saved-items li > div { flex-basis: 100%; } }
+@media (max-width: 420px) { .topbar { align-items: start; } .topbar nav { font-size: .75rem; gap: 14px; } .topbar nav form { flex-basis: 100%; text-align: right; } }
