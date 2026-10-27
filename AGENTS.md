@@ -36,15 +36,14 @@ Project Nico to prywatna aplikacja webowa pomagająca przeglądać wydarzenia pi
 - Reset bazy i ponowne migracje: `npm run db:reset`
 - Pobranie meczów do JSON-a: `npm run collect`
 - Rozliczenie wyników: `npm run results`
-- Testy lokalnego Auth, RLS i rozliczeń: `npm run test:db`
 - Test jednego meczu: `TARGET_DATE=2026-10-27 MAX_MATCHES=1 npm run collect`
-- Kontrola jakości: `npm run lint`, `npm run typecheck`, `npm run test`, `npm run build`
+- Kontrola jakości: `npm run lint`, `npm run typecheck`, `npm run format:check`, `npm run build`
 - Domyślna strefa czasu: `Europe/Warsaw`
 - Pliki wynikowe: `outputs/matches-YYYY-MM-DD.json`
 
 ## Development offline
 
-Po jednorazowym `npm install` i pierwszym `npm run local:setup` aplikacja, lokalna baza, Auth, migracje i testy mają działać bez internetu. Supabase dla tego projektu używa portów `55320–55329`, ponieważ standardowe porty zajmuje inny projekt. Nie zatrzymuj ani nie modyfikuj kontenerów innych projektów.
+Po jednorazowym `npm install` i pierwszym `npm run local:setup` aplikacja, lokalna baza, Auth i migracje mają działać bez internetu. Supabase dla tego projektu używa portów `55320–55329`, ponieważ standardowe porty zajmuje inny projekt. Nie zatrzymuj ani nie modyfikuj kontenerów innych projektów.
 
 Importer jest wyjątkiem i wymaga internetu. Kod aplikacji nie może uzależniać zwykłego lokalnego uruchomienia od dostępności Meczyki ani produkcyjnego Supabase. `.env.local` jest generowany przez `npm run env:local`, nie trafia do repozytorium i zawiera wyłącznie dane lokalnego Supabase.
 
@@ -154,13 +153,13 @@ Oba identyfikatory pochodzą z endpointu listy meczów. Endpoint obecnie zwraca 
 
 Na podstawie całej zwróconej, zakończonej historii skrypt oblicza także `h2h.summary`: liczbę spotkań, zwycięstwa obecnego gospodarza, remisy, zwycięstwa obecnego gościa oraz gole obu stron. Przy obliczeniach uwzględnia, że w historycznym meczu drużyny mogły występować w odwrotnych rolach.
 
-### 6. Szczegóły i wyniki wydarzenia
+### 6. Aktualizacja wyników z listy meczów
 
-`GET /matches/{MATCH_ID}`
+Proces `npm run results` używa wyłącznie endpointu z punktu 1: `GET /matches-by-competition/all?day={YYYY-MM-DD}&page={PAGE}&matches_per_page={LIMIT}`. Wybiera nierozliczone wydarzenia z bazy z dni do dzisiaj w Europe/Warsaw, grupuje je po dniu i pobiera wszystkie strony dla każdego dnia. Domyślnie sprawdza również dzisiejszą listę, aby znaleźć przełożone spotkania. `TARGET_DATE=YYYY-MM-DD npm run results` ogranicza kandydatów i pobieranie do jednej daty. Przyszłe dni są pomijane.
 
-Proces `npm run results` pobiera tym endpointem każde nierozliczone wydarzenie, także przy zmianie terminu. `startTime` aktualizuje termin, a `status` stan spotkania (`not_started` → `scheduled`, stany połówek → `live`, `finished`, `postponed`, `cancelled`; nieznane stany pozostają nierozstrzygnięte).
+Dopasowanie odbywa się po `id` równym `events.external_id`, tylko dla istniejących wydarzeń dostawcy Meczyki. `startTime` aktualizuje termin, a `status` stan spotkania (`not_started` → `scheduled`, stany połówek → `live`, `finished`, `postponed`, `cancelled`). Nieznany status i brak meczu na pobranych listach nie powodują anulowania ani rozliczenia. Przy przełożeniu na inny dzień, którego listy nie pobieramy, mecz pozostaje oczekujący do pojawienia się na sprawdzanej liście.
 
-W `attributes` wynik regulaminowy znajduje się w pozycjach o `type` równym `home_regular_time_score` i `away_regular_time_score`; `value` jest liczbą lub ciągiem liczbowym. Nie używamy dogrywki ani karnych. Przy braku tych atrybutów ogólny `homeScore` / `awayScore` jest jednoznaczny wyłącznie przy jawnym `withOvertime: false`. Brak pełnego, poprawnego wyniku oznacza oczekiwanie na następne pobranie. Anulowanie daje zwrot; przełożenie pozostawia pozycje oczekujące.
+W odpowiedzi listy `attributes` zawiera wynik regulaminowy w pozycjach o `type` równym `home_regular_time_score` i `away_regular_time_score`; `value` jest liczbą lub ciągiem liczbowym. Nie używamy dogrywki ani karnych. Przy braku tych atrybutów ogólny `homeScore` / `awayScore` jest jednoznaczny wyłącznie przy jawnym `withOvertime: false`. Pełny, poprawny wynik ze statusem `finished` uruchamia rozliczenie. Anulowanie daje zwrot; przełożenie i niepełny wynik pozostawiają pozycje oczekujące. Wyniki nie wymagają zapytań do endpointów kursów, statystyk ani szczegółów meczu.
 
 ## Przepływ danych
 
@@ -169,14 +168,25 @@ W `attributes` wynik regulaminowy znajduje się w pozycjach o `type` równym `ho
 3. Dane są normalizowane do typów z `src/lib/collector/types.ts`.
 4. Domyślny `SupabaseRepository` zapisuje dokument pojedynczym upsertem; opcjonalny `JsonRepository` zapisuje JSON atomowo. Import działa dla bieżącego dnia Europe/Warsaw, o ile nie podano TARGET_DATE.
 
+## Styl kodu i ustawienia interfejsu
+
+- Nie pisz testów i nie przywracaj usuniętych testów ani konfiguracji runnera. Weryfikuj przez lint, TypeScript, formatowanie i build.
+- Ręczne sprawdzanie działania i wyglądu strony oraz debugowanie w przeglądarce wykonuje właściciel. Agent nie musi uruchamiać przeglądarki ani sprawdzać interfejsu, chyba że właściciel wyraźnie o to poprosi.
+- Wcięcia: tabulatory o szerokości 4. Obowiązują `.editorconfig` i `.prettierrc.json`; uruchamiaj `npm run format`.
+- JSX i zagnieżdżone struktury zapisuj czytelnie na osobnych liniach. Wszystkie warunki i pętle mają klamry; ESLint wymusza `curly: all`.
+- Teksty interfejsu dodawaj do obu słowników `src/lib/i18n/messages/pl.json` i `en.json`. Nie wpisuj tekstów UI bezpośrednio w komponentach.
+- Komponenty serwerowe używają `getI18n()`, klienckie `useI18n()`. Komunikaty zwracane przez akcje są kluczami tłumaczeń.
+- Język i motyw wybiera się w `/settings`; są zapamiętywane w ciasteczkach tej przeglądarki. Domyślnie: polski i ciemny motyw. Root layout ustawia `lang` oraz `data-theme` przed renderowaniem UI.
+- Kolory interfejsu pochodzą ze zmiennych CSS, z wartościami dla jasnego i ciemnego motywu. Daty nadal używają Europe/Warsaw, a waluta pozostaje PLN niezależnie od języka.
+
 ## Ważne zasady przy rozwijaniu projektu
 
 - Nie przywracaj limitu pięciu spotkań; zapisuj wszystkie zakończone mecze zwrócone przez endpoint historii i H2H.
 - Wszystkie kursy jednego wydarzenia muszą pochodzić z jednego kompletnego rekordu odpowiedzi. Nie utrwalaj nazwy bukmachera.
 - Nie usuwaj opóźnienia pomiędzy zapytaniami ani obsługi retry.
-- Przy zmianie formatu odpowiedzi API zaktualizuj równocześnie typy, mapowanie, testy i ten dokument.
+- Przy zmianie formatu odpowiedzi API zaktualizuj równocześnie typy, mapowanie i ten dokument.
 - Przy dodawaniu bazy danych zachowaj interfejs repozytorium i pozostaw pobieranie danych niezależne od sposobu zapisu.
-- Po zmianie kodu uruchom przynajmniej lint i typecheck; przed zakończeniem etapu również testy i build.
+- Po zmianie kodu uruchom przynajmniej lint i typecheck; przed zakończeniem etapu również format:check i build.
 - UI i odczyt zapisanych danych muszą działać bez internetu przy uruchomionym lokalnym Supabase.
 
 <!-- BEGIN:nextjs-agent-rules -->

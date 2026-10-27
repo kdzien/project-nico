@@ -1,45 +1,45 @@
 {
-  "name": "project-nico",
-  "version": "0.1.0",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "dev": "WATCHPACK_POLLING=true next dev --webpack",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint .",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "collect": "tsx scripts/collect.ts",
-    "local:setup": "npm run db:start && npm run db:migrate && npm run env:local",
-    "env:local": "tsx scripts/setup-local-env.ts",
-    "db:start": "supabase start",
-    "db:stop": "supabase stop",
-    "db:status": "supabase status",
-    "db:reset": "supabase db reset",
-    "owner:create": "tsx scripts/create-owner.ts",
-    "test:db": "tsx scripts/tests/database.ts && tsx scripts/tests/settlement.ts",
-    "results": "tsx scripts/results.ts",
-    "db:migrate": "supabase migration up"
-  },
-  "dependencies": {
-    "@next/env": "^16.4.3",
-    "@supabase/ssr": "^0.12.7",
-    "@supabase/supabase-js": "^2.118.0",
-    "next": "^16.4.3",
-    "react": "^19.3.1",
-    "react-dom": "^19.3.1",
-    "zod": "^4.1.12"
-  },
-  "devDependencies": {
-    "@types/node": "^24.10.0",
-    "@types/react": "^19.2.2",
-    "@types/react-dom": "^19.2.2",
-    "eslint": "^9.39.1",
-    "eslint-config-next": "^16.4.3",
-    "supabase": "^2.122.0",
-    "tsx": "^4.20.0",
-    "typescript": "^5.9.3",
-    "vitest": "^4.0.8"
-  }
+	"name": "project-nico",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"dev": "WATCHPACK_POLLING=true next dev --webpack",
+		"build": "next build",
+		"start": "next start",
+		"lint": "eslint .",
+		"typecheck": "tsc --noEmit",
+		"collect": "tsx scripts/collect.ts",
+		"local:setup": "npm run db:start && npm run db:migrate && npm run env:local",
+		"env:local": "tsx scripts/setup-local-env.ts",
+		"db:start": "supabase start",
+		"db:stop": "supabase stop",
+		"db:status": "supabase status",
+		"db:reset": "supabase db reset",
+		"owner:create": "tsx scripts/create-owner.ts",
+		"results": "tsx scripts/results.ts",
+		"db:migrate": "supabase migration up",
+		"format": "prettier --write .",
+		"format:check": "prettier --check ."
+	},
+	"dependencies": {
+		"@next/env": "^16.4.3",
+		"@supabase/ssr": "^0.12.7",
+		"@supabase/supabase-js": "^2.118.0",
+		"next": "^16.4.3",
+		"react": "^19.3.1",
+		"react-dom": "^19.3.1",
+		"zod": "^4.1.12"
+	},
+	"devDependencies": {
+		"@types/node": "^24.10.0",
+		"@types/react": "^19.2.2",
+		"@types/react-dom": "^19.2.2",
+		"eslint": "^9.39.1",
+		"eslint-config-next": "^16.4.3",
+		"prettier": "^3.9.10",
+		"supabase": "^2.122.0",
+		"tsx": "^4.20.0",
+		"typescript": "^5.9.3"
+	}
 }

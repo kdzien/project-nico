@@ -1,6 +1,26 @@
+"use client";
+
 import Link from "next/link";
 import { logout } from "@/app/login/actions";
+import { useI18n } from "@/lib/i18n/provider";
+
 export function AppHeader() {
-  return <header className="topbar"><Link href="/" className="brand">NICO<span>Twój piłkarski warsztat</span></Link>
-    <nav aria-label="Główna nawigacja"><Link href="/">Wydarzenia</Link><Link href="/coupons">Moje kupony</Link><form action={logout}><button className="secondary">Wyloguj się</button></form></nav></header>;
+	const { t } = useI18n();
+
+	return (
+		<header className="topbar">
+			<Link href="/" className="brand">
+				NICO
+				<span>{t("app.tagline")}</span>
+			</Link>
+			<nav aria-label={t("nav.main")}>
+				<Link href="/">{t("nav.events")}</Link>
+				<Link href="/coupons">{t("nav.coupons")}</Link>
+				<Link href="/settings">{t("nav.settings")}</Link>
+				<form action={logout}>
+					<button className="secondary">{t("nav.logout")}</button>
+				</form>
+			</nav>
+		</header>
+	);
 }

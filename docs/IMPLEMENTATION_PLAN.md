@@ -1,6 +1,6 @@
 # Plan implementacji
 
-Każdy etap kończy się działającym, możliwym do zweryfikowania fragmentem. Nie rozpoczynamy kolejnego etapu, dopóki lint, TypeScript i testy bieżącego etapu nie przechodzą.
+Każdy etap kończy się działającym, możliwym do zweryfikowania fragmentem. Nie rozpoczynamy kolejnego etapu, dopóki lint, TypeScript, formatowanie i build bieżącego etapu nie przechodzą.
 
 ## Etap 1 — fundament projektu
 
@@ -73,6 +73,7 @@ Kryterium ukończenia: zapisany kupon zachowuje swoje kursy nawet po zmianie kur
 Status: ukończony 2026-10-26. Zweryfikowano wynik regulaminowy z rzeczywistego API, 14 testów jednostkowych oraz testy lokalnej bazy wszystkich typów, zwrotów, braku wyniku i równoległego ponowienia zadania. Lint, typecheck i build przechodzą.
 
 - ponowne pobieranie niezakończonych wydarzeń,
+- aktualizacja 2026-10-27: wyniki ze stronicowanej listy dni (`matches-by-competition/all`), bez osobnego zapytania o każdy mecz; opcjonalny `TARGET_DATE`,
 - zapis wyniku regulaminowego czasu gry,
 - rozliczanie `1`, `X`, `2`, `1X`, `2X`,
 - status każdej pozycji i całego kuponu,
@@ -98,3 +99,12 @@ Kryterium ukończenia: aplikacja działa w chmurze bez ręcznego codziennego uru
 - zachowanie wydarzeń i kursów użytych w kuponach,
 - obserwacja zajętości bazy,
 - opcjonalna historia skuteczności i statystyki własnych typów.
+
+## Zmiany ogólne — 2026-10-27
+
+- usunięcie testów automatycznych, skryptów testowych i Vitesta na życzenie właściciela; wcześniejsze wzmianki o testach dokumentują weryfikację wykonaną przed ich usunięciem,
+- tabulatory o szerokości 4, Prettier, EditorConfig i obowiązkowe klamry; czytelny zapis JSX,
+- słowniki PL/EN w JSON z tłumaczeniami interfejsu, komunikatów i statusów oraz lokalnym formatowaniem dat i liczb,
+- jasny i ciemny motyw oraz ekran ustawień z zapamiętywaniem preferencji w przeglądarce.
+
+Etapy 7 i 8 pozostają poza zakresem.

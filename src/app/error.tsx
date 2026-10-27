@@ -1,4 +1,15 @@
 "use client";
+
+import { useI18n } from "@/lib/i18n/provider";
+
 export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
-  return <main className="shell"><h1 className="error-title">Nie udało się wczytać danych.</h1><p className="lead">Sprawdź, czy lokalna baza jest uruchomiona, i spróbuj ponownie.</p><button onClick={reset}>Spróbuj ponownie</button></main>;
+	const { t } = useI18n();
+
+	return (
+		<main className="shell">
+			<h1 className="error-title">{t("error.title")}</h1>
+			<p className="lead">{t("error.description")}</p>
+			<button onClick={reset}>{t("error.retry")}</button>
+		</main>
+	);
 }
