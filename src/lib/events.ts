@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { EventRow } from "./models";
-import { dayBounds } from "./dates";
+import type { EventRow } from "@lib/models";
+import { dayBounds } from "@lib/dates";
 
 export async function loadEvents(db: SupabaseClient, day: string): Promise<EventRow[]> {
 	const [start, end] = dayBounds(day);

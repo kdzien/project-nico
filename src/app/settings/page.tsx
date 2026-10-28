@@ -1,7 +1,7 @@
-import { AppHeader } from "@/components/app-header";
-import { getI18n } from "@/lib/i18n/server";
-import { requireUser } from "@/lib/supabase/server";
-import { SettingsForm } from "./form";
+import { AppHeader } from "@components/app-header";
+import { getI18n } from "@lib/i18n/server";
+import { requireUser } from "@lib/supabase/server";
+import { SettingsForm } from "@app/settings/form";
 
 export default async function SettingsPage() {
 	await requireUser();
@@ -12,9 +12,7 @@ export default async function SettingsPage() {
 			<AppHeader />
 			<section className="page-heading">
 				<div>
-					<p className="eyebrow">{t("settings.eyebrow")}</p>
 					<h1>{t("settings.title")}</h1>
-					<p className="muted">{t("settings.description")}</p>
 				</div>
 			</section>
 			<SettingsForm />

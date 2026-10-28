@@ -2,17 +2,18 @@
 
 ## Cel projektu
 
-Project Nico to prywatna aplikacja webowa pomagająca przeglądać wydarzenia piłkarskie, układać kupony i później automatycznie rozliczać ich wyniki. Stos technologiczny to Next.js, TypeScript, React i Supabase/PostgreSQL. Importer danych Meczyki pozostaje osobnym procesem w tym samym repozytorium.
+Project Nico to aplikacja webowa pomagająca przeglądać wydarzenia piłkarskie, układać kupony i później automatycznie rozliczać ich wyniki. Stos technologiczny to Next.js, TypeScript, React i Supabase/PostgreSQL. Importer danych Meczyki pozostaje osobnym procesem w tym samym repozytorium.
 
 Źródłem prawdy dla planu jest `docs/IMPLEMENTATION_PLAN.md`, a decyzje architektoniczne znajdują się w `docs/ARCHITECTURE.md`. Realizuj etapy po kolei i aktualizuj status planu po zakończeniu etapu.
 
 ## Decyzje produktowe
 
-- Aplikacja jest początkowo dla jednego właściciela.
-- Logowanie: e-mail i hasło; produkcyjna rejestracja publiczna ma być wyłączona.
+- Aplikacja obsługuje wielu użytkowników. Każdy może samodzielnie założyć konto.
+- Rejestracja i logowanie: e-mail i hasło przez Supabase Auth. Publiczna rejestracja jest włączona; nie twórz osobnej roli administratora ani skryptów zakładających konta.
 - Pobieramy wszystkie dostępne wydarzenia i filtrujemy je w interfejsie.
 - Kursy są poglądowe. Nie pokazuj i nie zapisuj nazwy bukmachera.
-- Kupony zachowują kurs z chwili dodania pozycji.
+- Kupony zachowują kurs z chwili dodania pozycji. Pierwszy typ automatycznie tworzy kupon, kolejne zmiany zapisują się bez przycisków zapisu i zamknięcia. Niepuste kupony od razu podlegają rozliczaniu.
+- Na ekranie wydarzeń może być wiele prostych boksów kuponów. Kliknięcie boksu wybiera aktywny kupon, a „Dodaj kolejny kupon” tworzy i wybiera pusty. Pusty kupon pozostaje zapisany. Nie pokazuj licznika pozycji nad listą; pusty kupon wyświetla „Brak wybranych wydarzeń”. Pod pozycjami są mały kurs łączny, stawka i potencjalna wygrana. Rozpoczętych pozycji nie można pojedynczo zmieniać ani usuwać. Przycisk „Wyczyść” usuwa wszystkie pozycje kuponu (również rozpoczęte), zachowując stawkę. Cały boks można usunąć, jeśli widoczny jest więcej niż jeden kupon; po usunięciu aktywnego wybierz pozostały.
 - Docelowo osobny proces pobiera wyniki i rozlicza pozycje oraz całe kupony.
 - Nie dodawaj automatycznego obstawiania ani integracji wykonującej zakłady.
 
@@ -24,6 +25,8 @@ Project Nico to prywatna aplikacja webowa pomagająca przeglądać wydarzenia pi
 - `supabase/migrations` — wersjonowany schemat bazy oraz RLS.
 - `docs` — architektura i plan implementacji.
 - `outputs` — lokalne, ignorowane wyniki diagnostyczne JSON.
+
+Supabase działa w Dockerze. Katalog `supabase` zawiera wyłącznie konfigurację i migracje; kontenery oraz wolumeny z danymi są zarządzane przez Docker. Polecenia Supabase CLI uruchamiają ten zestaw kontenerów.
 
 ## Uruchamianie i kontrola jakości
 
@@ -50,7 +53,7 @@ Importer jest wyjątkiem i wymaga internetu. Kod aplikacji nie może uzależnia�
 ## Model danych
 
 - `events` — jedna tabela wydarzeń; pola filtrowalne są kolumnami, a `odds` i `statistics` to JSONB.
-- `coupons` — kupony właściciela.
+- `coupons` — kupony użytkowników; każdy ma dostęp tylko do swoich.
 - `coupon_items` — typ, `odds_at_add` oraz niezależny wynik pozycji.
 - `import_runs` — historia i błędy importów wydarzeń oraz wyników.
 
@@ -172,8 +175,12 @@ W odpowiedzi listy `attributes` zawiera wynik regulaminowy w pozycjach o `type` 
 
 - Nie pisz testów i nie przywracaj usuniętych testów ani konfiguracji runnera. Weryfikuj przez lint, TypeScript, formatowanie i build.
 - Ręczne sprawdzanie działania i wyglądu strony oraz debugowanie w przeglądarce wykonuje właściciel. Agent nie musi uruchamiać przeglądarki ani sprawdzać interfejsu, chyba że właściciel wyraźnie o to poprosi.
+- Importy w `src` oraz importy z `src` w procesach używają aliasów `@lib/…`, `@components/…` i `@app/…` z `tsconfig.json` (odpowiednio `src/lib/*`, `src/components/*`, `src/app/*`). Lokalne helpery procesów i arkusze CSS mogą używać ścieżek względnych.
 - Wcięcia: tabulatory o szerokości 4. Obowiązują `.editorconfig` i `.prettierrc.json`; uruchamiaj `npm run format`.
 - JSX i zagnieżdżone struktury zapisuj czytelnie na osobnych liniach. Wszystkie warunki i pętle mają klamry; ESLint wymusza `curly: all`.
+- Interfejs ma mieć krótkie, rzeczowe etykiety. Nie dodawaj sloganów, opisów powitalnych ani komunikatów technicznych o importach i orientacyjności kursów.
+- Nad listą meczów są tylko data z natychmiastowym odświeżeniem oraz filtr warunków kursów (zakres i porównania, wiele warunków, wszystkie/dowolny). Nie przywracaj osobnego nagłówka „Mecze” ani filtrów ligi, drużyny i statusu.
+- Karty meczów grupuj według ligi i zachowuj kompaktowy układ. Nazwy drużyn są po bokach, wynik pośrodku, pozycja i punkty obok nazw, pod nazwami forma W/D/L, na dole kursy. Nie powtarzaj nazw ligi, ról drużyn ani wiersza statusu. H2H jest na razie ukryte. Pokazuj całą zapisaną historię formy.
 - Teksty interfejsu dodawaj do obu słowników `src/lib/i18n/messages/pl.json` i `en.json`. Nie wpisuj tekstów UI bezpośrednio w komponentach.
 - Komponenty serwerowe używają `getI18n()`, klienckie `useI18n()`. Komunikaty zwracane przez akcje są kluczami tłumaczeń.
 - Język i motyw wybiera się w `/settings`; są zapamiętywane w ciasteczkach tej przeglądarki. Domyślnie: polski i ciemny motyw. Root layout ustawia `lang` oraz `data-theme` przed renderowaniem UI.

@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { logout } from "@/app/login/actions";
-import { useI18n } from "@/lib/i18n/provider";
+import { logout } from "@app/login/actions";
+import { useI18n } from "@lib/i18n/provider";
 
 export function AppHeader() {
 	const { t } = useI18n();
@@ -11,7 +11,6 @@ export function AppHeader() {
 		<header className="topbar">
 			<Link href="/" className="brand">
 				NICO
-				<span>{t("app.tagline")}</span>
 			</Link>
 			<nav aria-label={t("nav.main")}>
 				<Link href="/">{t("nav.events")}</Link>

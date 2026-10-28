@@ -1,11 +1,11 @@
 import { resolve } from "node:path";
-import { adminClient } from "./admin.js";
-import { calendarDate, validDate } from "../src/lib/dates.js";
-import { MeczykiClient } from "../src/lib/collector/meczyki-client.js";
-import { collectMatches } from "../src/lib/collector/collect.js";
-import { JsonRepository } from "../src/lib/collector/json-repository.js";
-import { SupabaseRepository } from "../src/lib/collector/supabase-repository.js";
-import { withImportRun } from "../src/lib/collector/import-run.js";
+import { importerClient } from "./supabase.js";
+import { calendarDate, validDate } from "@lib/dates";
+import { MeczykiClient } from "@lib/collector/meczyki-client";
+import { collectMatches } from "@lib/collector/collect";
+import { JsonRepository } from "@lib/collector/json-repository";
+import { SupabaseRepository } from "@lib/collector/supabase-repository";
+import { withImportRun } from "@lib/collector/import-run";
 
 async function main() {
 	const date = process.env.TARGET_DATE ?? calendarDate();
@@ -25,7 +25,7 @@ async function main() {
 		process.env.COLLECT_OUTPUT === "json"
 			? await collect()
 			: await (async () => {
-					const db = adminClient();
+					const db = importerClient();
 					return withImportRun(db, "events", date, async () => {
 						const value = await collect();
 						await new SupabaseRepository(db).save(value);

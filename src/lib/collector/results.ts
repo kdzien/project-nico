@@ -1,8 +1,8 @@
 import { z } from "zod";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { MeczykiClient } from "./meczyki-client.js";
-import { calendarDate, dayBounds, validDate } from "../dates.js";
-import { eventStatus } from "./status.js";
+import type { MeczykiClient } from "@lib/collector/meczyki-client";
+import { calendarDate, dayBounds, validDate } from "@lib/dates";
+import { eventStatus } from "@lib/collector/status";
 
 const score = z.number().int().nonnegative().nullable();
 const resultSchema = z.object({

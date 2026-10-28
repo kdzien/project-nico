@@ -1,7 +1,7 @@
 "use client";
-import { useI18n } from "@/lib/i18n/provider";
+import { useI18n } from "@lib/i18n/provider";
 import { useActionState, useState } from "react";
-import { deleteCoupon } from "@/app/coupons/actions";
+import { deleteCoupon } from "@app/coupons/actions";
 export function DeleteCoupon({ id }: { id: string }) {
 	const { t } = useI18n();
 	const [state, action, pending] = useActionState(deleteCoupon, "");

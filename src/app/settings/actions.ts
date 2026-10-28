@@ -3,8 +3,8 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { requireUser } from "@/lib/supabase/server";
-import type { MessageKey } from "@/lib/i18n";
+import { requireUser } from "@lib/supabase/server";
+import type { MessageKey } from "@lib/i18n";
 
 const preferencesSchema = z.object({
 	locale: z.enum(["pl", "en"]),

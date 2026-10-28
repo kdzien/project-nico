@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, type ReactNode } from "react";
-import { createI18n, type Preferences } from "./index";
+import { createI18n, type Preferences } from "@lib/i18n";
 
 const PreferencesContext = createContext<Preferences>({ locale: "pl", theme: "dark" });
 

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { selections } from "./models";
+import { selections } from "@lib/models";
 export const couponInput = z.object({
 	id: z.uuid().nullable(),
 	name: z.string().trim().min(1).max(120),
@@ -12,11 +12,12 @@ export const couponInput = z.object({
 				odds_at_add: z.number().finite().positive().max(99999999.99),
 			}),
 		)
-		.min(1)
 		.max(100)
 		.refine((items) => new Set(items.map((item) => item.event_id)).size === items.length),
-	finalize: z.boolean(),
 });
-export function combinedOdds(items: { odds_at_add: number }[]): number {
-	return items.reduce((product, item) => product * item.odds_at_add, 1);
+export function combinedOdds(items: { odds_at_add: number; result?: string }[]): number {
+	return items.reduce(
+		(product, item) => product * (item.result === "void" ? 1 : item.odds_at_add),
+		1,
+	);
 }

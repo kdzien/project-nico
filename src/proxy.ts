@@ -1,6 +1,8 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { supabaseConfig } from "@/lib/supabase/config";
+import { supabaseConfig } from "@lib/supabase/config";
+
+const publicPaths = new Set(["/login", "/register", "/auth/callback"]);
 
 export async function proxy(request: NextRequest) {
 	let response = NextResponse.next({ request });
@@ -21,7 +23,7 @@ export async function proxy(request: NextRequest) {
 		},
 	});
 	const { data } = await db.auth.getUser();
-	if (!data.user && request.nextUrl.pathname !== "/login") {
+	if (!data.user && !publicPaths.has(request.nextUrl.pathname)) {
 		const target = request.nextUrl.clone();
 		target.pathname = "/login";
 		target.search = "";

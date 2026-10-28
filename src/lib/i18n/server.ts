@@ -1,7 +1,7 @@
 import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
-import { createI18n, type Preferences } from "./index";
+import { createI18n, type Preferences } from "@lib/i18n";
 
 export const getPreferences = cache(async (): Promise<Preferences> => {
 	const store = await cookies();

@@ -1,5 +1,5 @@
-import type { CollectedMatch, CollectedTeam } from "./collector/types";
-export const selections = ["1", "X", "2", "1X", "2X"] as const;
+import type { CollectedMatch, CollectedTeam } from "@lib/collector/types";
+export const selections = ["1", "1X", "X", "2X", "2"] as const;
 export type Selection = (typeof selections)[number];
 export interface EventRow {
 	id: string;
@@ -33,8 +33,19 @@ export interface Coupon {
 	coupon_items: CouponItem[];
 }
 export interface DraftItem {
+	result?: string;
 	event_id: string;
 	selection: Selection;
 	odds_at_add: number;
 	event: EventRow;
+}
+
+export interface CouponDraft {
+	key: string;
+	id: string | null;
+	name: string;
+	stake: string;
+	items: DraftItem[];
+	revision: number;
+	change: "items" | "stake";
 }

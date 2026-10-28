@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { useI18n } from "@/lib/i18n/provider";
-import { login } from "./actions";
+import { useI18n } from "@lib/i18n/provider";
+import { login } from "@app/login/actions";
 
 export function LoginForm() {
 	const { t } = useI18n();

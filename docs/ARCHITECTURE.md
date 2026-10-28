@@ -2,8 +2,8 @@
 
 ## Założenia
 
-- Aplikacja jest prywatna i przeznaczona początkowo dla jednego użytkownika.
-- Logowanie odbywa się przez e-mail i hasło.
+- Aplikacja obsługuje publiczną rejestrację wielu użytkowników; każdy zarządza własnymi kuponami.
+- Rejestracja i logowanie odbywają się przez e-mail i hasło w Supabase Auth.
 - Aplikacja działa lokalnie bez internetu, poza importem danych z zewnętrznego API.
 - Produkcja korzysta z Vercel oraz Supabase, a development z lokalnego Supabase uruchamianego w Dockerze.
 - Kursy są orientacyjne. Nie pokazujemy ani nie utrwalamy nazwy bukmachera.
@@ -58,7 +58,7 @@ Nazwy drużyn i ligi pozostają bezpośrednio w `events`. Nie tworzymy jeszcze t
 - Zalogowany użytkownik może czytać wydarzenia oraz importy.
 - Użytkownik zarządza tylko własnymi kuponami i pozycjami.
 - Importer używa sekretnego klucza wyłącznie po stronie serwera i może zapisywać wydarzenia.
-- Publiczna rejestracja ma być wyłączona w produkcji; konto właściciela powstaje ręcznie.
+- Rejestracja jest publiczna. Nie ma osobnego administratora aplikacji ani ręcznego zakładania kont. Istniejące RLS rozdziela kupony po `auth.uid()`.
 
 ## Praca offline
 
@@ -75,10 +75,11 @@ Pełna reinstalacja zależności lub pierwsze pobranie obrazów Dockera wymaga s
 ## Zaimplementowane etapy 2–6
 
 - Klient SSR używa ciasteczek; `src/proxy.ts` odświeża sesję i przekazuje nowe ciasteczka do renderowania i przeglądarki. Trasy oraz każda akcja ponownie weryfikują użytkownika. Dane czytamy klientem z kluczem publicznym z obowiązującym RLS.
-- Zwykłe operacje nie używają klucza sekretnego. `scripts/admin.ts` tworzy klienta administracyjnego wyłącznie dla procesów importu, wyników, tworzenia konta.
+- Zwykłe operacje nie używają klucza sekretnego. `scripts/supabase.ts` tworzy klienta z kluczem serwerowym wyłącznie dla procesów importu wydarzeń i wyników. Nie zarządza kontami użytkowników.
 - Import całego dokumentu jest pojedynczym upsertem. Dane opisowe i kursy mogą się zmieniać; trigger chroni status i wynik już rozliczonego wydarzenia przed cofnięciem przez kolejny import.
-- `save_coupon` w jednej transakcji sprawdza właściciela, wersję roboczą, unikalność wydarzeń i dostępność spotkań. Pozycja zachowuje kurs wyświetlony w momencie dodania. Przy edycji tego samego typu SQL zachowuje wcześniej zapisany kurs niezależnie od danych nadesłanych przez interfejs. Bezpośredni INSERT/UPDATE kuponów oraz mutacje pozycji są odebrane roli authenticated; pozostają odczyt przez RLS i usuwanie własnego kuponu.
-- `settle_event` jest dostępne tylko roli service_role. Blokuje powiązane kupony, potem wydarzenie; wynik, pozycje i statusy kuponów zmieniają się atomowo. Równoległe i powtórzone wywołania nie rozliczają wydarzenia drugi raz. Wersje robocze pozostają nierozliczone.
+- `save_coupon` w jednej transakcji sprawdza właściciela, edytowalny status, unikalność wydarzeń i dostępność nowych lub zmienianych typów. Zmiany pozycji zapisują się automatycznie, stawka po krótkiej przerwie we wpisywaniu; zapisy jednego kuponu są kolejkowane, aby zachować kolejność i identyfikator nowego kuponu. Pusty kupon ma status draft, niepusty placed i od razu podlega rozliczeniu. Rozpoczętych pozycji nie można zmieniać ani usuwać. Pozycja zachowuje kurs wyświetlony w momencie dodania. Przy edycji tego samego typu SQL zachowuje wcześniej zapisany kurs niezależnie od danych nadesłanych przez interfejs. Bezpośredni INSERT/UPDATE kuponów oraz mutacje pozycji są odebrane roli authenticated; pozostają odczyt przez RLS i usuwanie własnego kuponu.
+- `clear_coupon` w transakcji sprawdza właściciela i blokuje kupon przed usunięciem wszystkich jego pozycji; resetuje status do draft i kurs do 1, zachowując stawkę. Jawne wyczyszczenie obejmuje także rozpoczęte wydarzenia. Czyszczenie i usuwanie boksu czekają w tej samej kolejce co zapis, więc nie ścigają się z rozpoczętym zapisem.
+- `settle_event` jest dostępne tylko roli service_role. Blokuje powiązane kupony, potem wydarzenie; wynik, pozycje i statusy kuponów zmieniają się atomowo. Równoległe i powtórzone wywołania nie rozliczają wydarzenia drugi raz. Status draft jest używany tylko dla pustych kuponów. Migracja autosave przelicza wyniki dawnych wersji roboczych na podstawie już zapisanych wyników wydarzeń.
 - Anulowanie daje zwrot z efektywnym kursem 1; przełożenie i brak jednoznacznego wyniku pozostają oczekujące. Wynik pochodzi z regulaminowego czasu, bez dogrywki i karnych. Niejednoznaczny wynik nie jest zgadywany.
 - `scripts/results.ts` odczytuje stronicami nierozliczone wydarzenia z dni do dzisiaj przed rozpoczęciem aktualizacji. Grupuje je po dniu w Europe/Warsaw i używa wyłącznie stronicowanej listy `/matches-by-competition/all`. Jeden dzień jest pobierany raz w obrębie uruchomienia, a wyniki dopasowywane po zewnętrznym ID. Domyślnie sprawdza też dzisiejszą listę, aby odnaleźć mecze przeniesione z wcześniejszych dni; `TARGET_DATE` ogranicza pracę do jednego dnia. Brak meczu na sprawdzanych listach pozostawia go oczekującym, bez zgadywania nowego terminu. Przyszłe dni są pomijane. Błędy częściowe są rejestrowane z licznikami postępu, a kolejne uruchomienie podejmie brakujące wydarzenia.
 - Dzień i jego granice wyznaczamy w Europe/Warsaw, również w dniach zmiany czasu. Odczyt wydarzeń i kuponów jest stronicowany, aby limit odpowiedzi API bazy nie obcinał listy.
@@ -92,3 +93,11 @@ Języki `pl` i `en` mają słowniki JSON z wspólnymi, sprawdzanymi przez TypeSc
 Chroniony ekran `/settings` zapisuje język i motyw w ciasteczkach `nico-locale` oraz `nico-theme` na rok, dla tej przeglądarki. Root layout odczytuje je przed renderowaniem, ustawia język HTML oraz atrybut motywu i przekazuje preferencje do kontekstu React. Wybór nie wymaga zmian schematu bazy i pozostaje aktywny na ekranie logowania. Oba motywy korzystają ze wspólnych semantycznych zmiennych CSS.
 
 Na życzenie właściciela usunięto testy automatyczne i runner. Bieżąca kontrola jakości obejmuje ESLint, TypeScript, Prettier, build i ręczne sprawdzanie interfejsu.
+
+## Rejestracja i środowisko developerskie
+
+`/register` wywołuje `auth.signUp()` klientem z kluczem publicznym i sesją w ciasteczkach. Lokalne Auth ma włączoną rejestrację i wyłączone potwierdzanie e-maila; po założeniu konta użytkownik przechodzi do aplikacji. Przy serwerze wymagającym potwierdzenia adresu formularz pokazuje komunikat, a `/auth/callback` wymienia kod PKCE na sesję. Proxy dopuszcza niezalogowanych do `/login`, `/register` i callbacka; reszta aplikacji wymaga sesji.
+
+Zmiana na wielu użytkowników nie wymaga migracji: Auth przechowuje konta, `coupons.user_id` określa właściciela kuponu, a RLS i funkcja `save_coupon` sprawdzają bieżącego użytkownika. Istniejące konta i dane pozostają zachowane.
+
+Cały lokalny Supabase jest uruchamiany w kontenerach Dockera przez CLI. Konfiguracja i migracje pozostają w repozytorium; dane są w wolumenach Dockera. Next.js i procesy `tsx` korzystają z aliasów `@lib/*`, `@components/*` i `@app/*` z `tsconfig.json`, wskazujących odpowiednio `src/lib/*`, `src/components/*` i `src/app/*`.

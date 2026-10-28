@@ -1,6 +1,6 @@
 import { mkdir, rename, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
-import type { CollectionDocument } from "./types.js";
+import type { CollectionDocument } from "@lib/collector/types";
 
 export interface CollectionRepository {
 	save(document: CollectionDocument): Promise<string>;

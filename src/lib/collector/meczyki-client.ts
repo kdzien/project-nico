@@ -1,4 +1,4 @@
-import type { ApiMatch, ApiOdds, ApiResponse } from "./types.js";
+import type { ApiMatch, ApiOdds, ApiResponse } from "@lib/collector/types";
 
 const API_BASE = "https://api.meczyki.pl/api/v2/soccer";
 

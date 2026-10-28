@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { getI18n, getPreferences } from "@/lib/i18n/server";
-import { PreferencesProvider } from "@/lib/i18n/provider";
+import { getI18n, getPreferences } from "@lib/i18n/server";
+import { PreferencesProvider } from "@lib/i18n/provider";
 import "./globals.css";
 
 export async function generateMetadata(): Promise<Metadata> {

@@ -2,7 +2,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { supabaseConfig } from "./config";
+import { supabaseConfig } from "@lib/supabase/config";
 
 export async function serverSupabase() {
 	const store = await cookies();

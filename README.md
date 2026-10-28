@@ -1,6 +1,6 @@
 # Project Nico
 
-Prywatna aplikacja do przeglądania wydarzeń piłkarskich, budowania kuponów oraz późniejszego automatycznego rozliczania wyników. Projekt łączy aplikację Next.js, lokalny lub chmurowy Supabase oraz istniejący importer danych Meczyki.
+Aplikacja dla wielu użytkowników do przeglądania wydarzeń piłkarskich, budowania kuponów oraz późniejszego automatycznego rozliczania wyników. Projekt łączy aplikację Next.js, lokalny lub chmurowy Supabase oraz istniejący importer danych Meczyki.
 
 Aktualny etap i kolejność prac znajdują się w `docs/IMPLEMENTATION_PLAN.md`. Decyzje techniczne opisuje `docs/ARCHITECTURE.md`.
 
@@ -46,6 +46,12 @@ Aktualizacja istniejącej lokalnej bazy bez usuwania danych:
 ```bash
 npm run db:migrate
 ```
+
+## Supabase i Docker
+
+Supabase już działa w Dockerze: PostgreSQL, Auth, API i Studio są kontenerami widocznymi w Docker Desktop. Polecenie `npm run db:start` używa Supabase CLI do ich uruchomienia, a `npm run db:stop` zatrzymuje wyłącznie kontenery tego projektu.
+
+Folder `supabase/` nie zawiera działającego serwera ani danych bazy. Trzymamy tam `config.toml` i wersjonowane migracje, żeby każdy mógł odtworzyć ten sam schemat. Dane znajdują się w wolumenach Dockera. Aplikacja Next.js działa na hoście i łączy się z API kontenerów pod `http://127.0.0.1:55321`.
 
 Project Nico używa portów Supabase `55320–55329`, żeby nie kolidować z innymi lokalnymi projektami.
 
@@ -93,21 +99,35 @@ COLLECT_OUTPUT=json npm run collect
 
 Importer nie obcina listy wydarzeń. `MAX_MATCHES` służy jedynie ręcznym próbom; taki import zawiera niepełny dzień. Supabase pobiera konfigurację z `.env.local`; kod aplikacji i importer nie wybierają automatycznie produkcyjnej bazy.
 
-## Konto i logowanie
+## Rejestracja i logowanie
 
-Publiczna rejestracja jest wyłączona w `supabase/config.toml`; aplikacja nie udostępnia formularza rejestracji. Nadrzędne `auth.enable_signup = false` blokuje nowe konta; `auth.email.enable_signup = true` musi pozostać włączone, ponieważ lokalny CLI używa go także do włączenia logowania e-mailem. Utwórz właściciela przez serwerowy proces administracyjny:
+Otwórz `/register` lub wybierz **Załóż konto** na ekranie logowania. Podaj e-mail, hasło (8–128 znaków) i powtórz hasło. Nie ma roli administratora aplikacji, konta właściciela ani skryptu tworzącego konta.
 
-```bash
-OWNER_EMAIL='twoj-email@example.com' OWNER_PASSWORD='wlasne-dlugie-haslo' npm run owner:create
-```
+Lokalnie rejestracja jest włączona i nie wymaga potwierdzenia e-maila, więc po utworzeniu konta od razu przechodzisz do aplikacji. Istniejące konta nadal działają. Każdy użytkownik widzi wspólne wydarzenia, ale wyłącznie własne kupony; dostęp egzekwuje RLS w bazie.
 
-Następnie zaloguj się pod `/login`. Hasło musi mieć co najmniej 10 znaków. Konto jest przechowywane w lokalnym Supabase i przetrwa jego zatrzymanie. `db:reset` usuwa dane, w tym konta. Przy podłączeniu zewnętrznego Supabase należy również wyłączyć **Allow new users to sign up** w konfiguracji Auth tego projektu; lokalny plik nie zmienia ustawień zdalnego serwera.
+Jeśli zewnętrzny Supabase wymaga potwierdzenia adresu, aplikacja wyświetli komunikat o e-mailu i obsłuży powrót przez `/auth/callback`. W konfiguracji Auth takiego serwera włącz rejestrację i dodaj adres aplikacji z `/auth/callback` do dozwolonych przekierowań. Link należy otworzyć w tej samej przeglądarce, w której rozpoczęto rejestrację.
+
+Konta i kupony są przechowywane w bazie w Dockerze i przetrwają zatrzymanie kontenerów. `db:reset` usuwa dane, w tym konta. Klucz sekretny pozostaje wyłącznie w procesach importu wydarzeń i wyników; rejestracja korzysta z publicznego klienta Auth.
+
+## Lista meczów
+
+Mecze są pogrupowane według ligi, a wewnątrz grupy uporządkowane godziną rozpoczęcia. Nad listą są dwa filtry: data i warunki kursów. Wybór daty od razu pobiera zapisane wydarzenia danego dnia, bez przycisku zatwierdzania.
+
+Filtr kursów obsługuje typy `1`, `1X`, `X`, `2X`, `2`, zakres od–do (z granicami włącznie) oraz `<`, `≤`, `>`, `≥` i `=`. Można dodawać i usuwać warunki oraz wybrać, czy muszą być spełnione wszystkie, czy dowolny. Przykład: `1X od 1 do 1,5` lub `1 poniżej 2` z opcją **LUB**.
+
+Filtrowanie działa od razu podczas wpisywania. Liczby przyjmują przecinek lub kropkę. Puste warunki nie filtrują, a niepoprawne pokazują błąd i nie są stosowane. Przy zakresie można podać tylko dolną lub tylko górną granicę. Brak kursu nie jest traktowany jako zero i nie spełnia warunku dotyczącego tego typu.
+
+Karta pokazuje gospodarza po lewej, gościa po prawej i wynik pośrodku. Pod nazwami znajdują się kwadraty W/D/L z całą zapisaną historią, od najnowszego meczu. Najazd lub ustawienie fokusu na kwadracie pokazuje datę, drużyny i dokładny wynik. Pozycja i punkty ligowe są pokazane skrótowo obok nazwy drużyny, jeśli zapisano tabelę.
+
+Sekcja H2H jest obecnie ukryta; dane nadal są pobierane i zapisywane. Karta nie powtarza nazwy ligi, ról drużyn ani wiersza statusu. Kursy i wybór pozycji do kuponu znajdują się na dole karty.
 
 ## Kupony
 
-Wybierz kurs przy przyszłym wydarzeniu. Kolejny typ dla tego samego meczu zastąpi poprzedni. Zapisz wersję roboczą przed zmianą dnia lub opuszczeniem ekranu. Na liście **Moje kupony** możesz otworzyć wersję roboczą do dalszej edycji albo usunąć własny kupon.
+Wybierz kurs przy przyszłym wydarzeniu. Pierwszy typ automatycznie tworzy kupon, a kolejne zmiany zapisują się bez przycisku zapisu. Inny typ tego samego meczu zastępuje poprzedni. Usunięcie ostatniego typu pozostawia pusty kupon.
 
-**Zamknij i śledź wyniki** blokuje dalszą edycję pozycji i włącza rozliczanie. Jest to zapis typów do obserwacji, bez wykonywania zakładu. Nie można zamknąć kuponu po rozpoczęciu któregokolwiek z jego wydarzeń. Zapisane pozycje zachowują kurs mimo kolejnych importów.
+Po prawej widać osobne, proste boksy: liczba pozycji, mecze z typami i kursami, kurs łączny, stawka i potencjalna wygrana (stawka × kurs). **Dodaj kolejny kupon** tworzy i wybiera pusty kupon. Kliknięcie boksu wybiera kupon do dodawania typów; jeden kupon jest wybrany domyślnie. Zmiana dnia zachowuje wybór i pozycje, a zapisane kupony wracają po odświeżeniu.
+
+Niepuste kupony od razu podlegają automatycznemu rozliczeniu. Rozpoczętych i niedostępnych pozycji nie można pojedynczo zmieniać ani usuwać. **Wyczyść** usuwa wszystkie wydarzenia kuponu, zachowując stawkę. **Usuń kupon** usuwa cały boks; przy jednym kuponie przycisk jest ukryty. Operacje są kolejkowane z automatycznym zapisem. Kurs pozycji jest zachowany z chwili jej dodania. Lista **Moje kupony** zawiera również wyniki i możliwość usunięcia własnego kuponu. Migracja `202610280001_coupon_autosave.sql` obejmuje dotychczasowe wersje robocze automatycznym rozliczaniem, zachowując ich identyfikatory i kursy.
 
 ## Wyniki
 
@@ -117,7 +137,7 @@ npm run results
 
 Proces korzysta wyłącznie z `GET /matches-by-competition/all?day=DATA&page=STRONA&matches_per_page=20`. Z bazy wybiera nierozliczone wydarzenia z dni do dzisiaj w `Europe/Warsaw`, grupuje je po dniu i pobiera kolejne strony każdej listy aż do krótszej odpowiedzi. Nie pobiera kursów, statystyk, historii drużyn ani szczegółów pojedynczego meczu. Dopasowuje spotkania po zewnętrznym ID; nie dodaje nowych wydarzeń.
 
-Zakończone mecze z pełnym wynikiem regulaminowym aktualizują bazę i rozliczają zamknięte kupony. Anulowane dają zwrot. Zmiany terminu/statusu są zapisywane także dla nierozstrzygniętych spotkań, a niezmienione rekordy są pomijane. Brak spotkania na liście nie jest traktowany jako anulowanie: pozostaje oczekujące. Domyślnie skrypt sprawdza również dzisiejszą listę, by znaleźć przełożone spotkania; nie szuka nowego terminu na wszystkich przyszłych listach.
+Zakończone mecze z pełnym wynikiem regulaminowym aktualizują bazę i rozliczają zapisane kupony. Anulowane dają zwrot. Zmiany terminu/statusu są zapisywane także dla nierozstrzygniętych spotkań, a niezmienione rekordy są pomijane. Brak spotkania na liście nie jest traktowany jako anulowanie: pozostaje oczekujące. Domyślnie skrypt sprawdza również dzisiejszą listę, by znaleźć przełożone spotkania; nie szuka nowego terminu na wszystkich przyszłych listach.
 
 Sprawdzenie wyłącznie wydarzeń zapisanych pod konkretnym dniem:
 
@@ -153,3 +173,19 @@ npm run format:check
 ```
 
 Zgodnie z decyzją właściciela testy i ich runner zostały usunięte. Nie dodajemy kolejnych. Weryfikacja obejmuje lint, TypeScript, formatowanie, build i ręczne sprawdzenie działania.
+
+## Next.js dla osoby przychodzącej z Angulara
+
+Aliasy w `tsconfig.json` działają w Next.js bez dodatkowego pluginu: `@lib/*` wskazuje `src/lib/*`, `@components/*` wskazuje `src/components/*`, a `@app/*` wskazuje `src/app/*`. Dlatego `@lib/supabase/server` wskazuje `src/lib/supabase/server.ts`, podobnie jak aliasy importów w Angularze. Procesy uruchamiane przez `tsx` korzystają z tego samego ustawienia.
+
+| Plik / katalog              | Rola                                                                    |
+| --------------------------- | ----------------------------------------------------------------------- |
+| `src/app/page.tsx`          | Strona pod `/`                                                          |
+| `src/app/register/page.tsx` | Strona pod `/register`; routing wynika z katalogów                      |
+| `src/app/layout.tsx`        | Wspólny układ, który renderuje `children` stron                         |
+| `src/app/**/actions.ts`     | Funkcje z `"use server"`, np. obsługa formularza wykonywana na serwerze |
+| `src/app/**/route.ts`       | Endpoint HTTP; np. callback logowania                                   |
+| `src/components`            | Współdzielone komponenty React                                          |
+| `src/lib`                   | Wspólna logika, klient bazy i tłumaczenia                               |
+
+Komponenty App Routera domyślnie wykonują się na serwerze. `"use client"` oznacza komponent interaktywny, który może korzystać ze stanu i zdarzeń w przeglądarce. To główna różnica względem typowego komponentu Angulara wykonywanego w przeglądarce.

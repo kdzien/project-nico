@@ -1,6 +1,6 @@
-import { eventStatus } from "./status.js";
-import { MeczykiClient } from "./meczyki-client.js";
-import { doubleChance, roundOdds } from "../odds.js";
+import { eventStatus } from "@lib/collector/status";
+import { MeczykiClient } from "@lib/collector/meczyki-client";
+import { doubleChance, roundOdds } from "@lib/odds";
 import type {
 	ApiMatch,
 	ApiOdds,
@@ -8,7 +8,7 @@ import type {
 	CollectionDocument,
 	RecentMatch,
 	TableEntry,
-} from "./types.js";
+} from "@lib/collector/types";
 
 function score(match: ApiMatch): string | null {
 	return match.homeScore === null || match.awayScore === null

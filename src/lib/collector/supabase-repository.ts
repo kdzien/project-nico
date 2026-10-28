@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { CollectionRepository } from "./json-repository.js";
-import type { CollectedMatch, CollectionDocument } from "./types.js";
+import type { CollectionRepository } from "@lib/collector/json-repository";
+import type { CollectedMatch, CollectionDocument } from "@lib/collector/types";
 
 export function eventRecord(match: CollectedMatch, generatedAt: string) {
 	return {

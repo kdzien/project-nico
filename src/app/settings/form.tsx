@@ -1,8 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { useI18n } from "@/lib/i18n/provider";
-import { savePreferences } from "./actions";
+import { useI18n } from "@lib/i18n/provider";
+import { savePreferences } from "@app/settings/actions";
 
 export function SettingsForm() {
 	const { t, locale, theme } = useI18n();
@@ -11,8 +11,6 @@ export function SettingsForm() {
 	return (
 		<form action={action} className="settings-form stack">
 			<section className="settings-card">
-				<h2>{t("settings.language")}</h2>
-				<p className="muted">{t("settings.languageDescription")}</p>
 				<label>
 					{t("settings.language")}
 					<select name="locale" key={locale} defaultValue={locale} disabled={pending}>
@@ -27,8 +25,6 @@ export function SettingsForm() {
 			</section>
 
 			<section className="settings-card">
-				<h2>{t("settings.theme")}</h2>
-				<p className="muted">{t("settings.themeDescription")}</p>
 				<fieldset className="theme-options" key={theme} disabled={pending}>
 					<legend>{t("settings.theme")}</legend>
 					{(["light", "dark"] as const).map((value) => (
@@ -53,7 +49,6 @@ export function SettingsForm() {
 				</fieldset>
 			</section>
 
-			<p className="muted small">{t("settings.persistence")}</p>
 			{message && (
 				<p role="status" className={message === "settings.saved" ? "success" : "notice"}>
 					{t(message)}

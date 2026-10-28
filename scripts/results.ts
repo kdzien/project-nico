@@ -1,8 +1,8 @@
-import { adminClient } from "./admin.js";
-import { calendarDate, validDate } from "../src/lib/dates.js";
-import { MeczykiClient } from "../src/lib/collector/meczyki-client.js";
-import { withImportRun } from "../src/lib/collector/import-run.js";
-import { refreshResults } from "../src/lib/collector/results.js";
+import { importerClient } from "./supabase.js";
+import { calendarDate, validDate } from "@lib/dates";
+import { MeczykiClient } from "@lib/collector/meczyki-client";
+import { withImportRun } from "@lib/collector/import-run";
+import { refreshResults } from "@lib/collector/results";
 
 async function main() {
 	const date = process.env.TARGET_DATE;
@@ -10,7 +10,7 @@ async function main() {
 		throw new Error("TARGET_DATE musi mieć format YYYY-MM-DD.");
 	}
 	const now = new Date();
-	const db = adminClient();
+	const db = importerClient();
 	const client = new MeczykiClient(
 		Number(process.env.REQUEST_DELAY_MS ?? 350),
 		Number(process.env.RETRIES ?? 3),

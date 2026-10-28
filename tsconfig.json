@@ -21,7 +21,9 @@
 			}
 		],
 		"paths": {
-			"@/*": ["./src/*"]
+			"@lib/*": ["./src/lib/*"],
+			"@components/*": ["./src/components/*"],
+			"@app/*": ["./src/app/*"]
 		},
 		"types": ["node"]
 	},

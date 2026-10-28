@@ -1,9 +1,9 @@
 "use server";
-import type { MessageKey } from "@/lib/i18n";
-import { getI18n } from "@/lib/i18n/server";
+import type { MessageKey } from "@lib/i18n";
+import { getI18n } from "@lib/i18n/server";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { serverSupabase } from "@/lib/supabase/server";
+import { serverSupabase } from "@lib/supabase/server";
 
 export async function login(_previous: MessageKey | "", form: FormData): Promise<MessageKey | ""> {
 	const input = z.object({ email: z.email(), password: z.string().min(1) }).safeParse({

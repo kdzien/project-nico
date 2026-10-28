@@ -16,7 +16,6 @@
 		"db:stop": "supabase stop",
 		"db:status": "supabase status",
 		"db:reset": "supabase db reset",
-		"owner:create": "tsx scripts/create-owner.ts",
 		"results": "tsx scripts/results.ts",
 		"db:migrate": "supabase migration up",
 		"format": "prettier --write .",

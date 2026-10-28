@@ -23,10 +23,10 @@ Status: ukończony 2026-10-26. Zweryfikowano logowanie, odświeżanie, wylogowan
 - logowanie e-mail/hasło,
 - wylogowanie i odświeżanie sesji,
 - ochrona tras aplikacji,
-- brak publicznej rejestracji w produkcji,
+- publiczna rejestracja e-mail/hasło (zmiana założenia 2026-10-27),
 - testy polityk RLS.
 
-Kryterium ukończenia: właściciel loguje się lokalnie i widzi chroniony ekran; inny użytkownik nie odczytuje jego danych.
+Kryterium ukończenia: użytkownik zakłada konto, loguje się i widzi chroniony ekran; inny użytkownik nie odczytuje jego kuponów.
 
 ## Etap 3 — zapis importu do bazy
 
@@ -48,7 +48,7 @@ Status: ukończony 2026-10-26. Zweryfikowano listę, filtr i statystyki w przegl
 
 - ekran dzisiejszych wydarzeń,
 - sortowanie według godziny,
-- filtry ligi, drużyny i statusu,
+- data z natychmiastowym odświeżaniem i rozbudowane warunki kursów (zastępują filtry ligi, drużyny i statusu),
 - kursy `1`, `X`, `2`, `1X`, `2X`,
 - rozwijane tabele, forma i H2H,
 - czytelne stany braku danych i nieudanego importu.
@@ -59,14 +59,17 @@ Kryterium ukończenia: użytkownik może sprawnie przejrzeć wszystkie mecze dni
 
 Status: ukończony 2026-10-26. Testy bazy potwierdziły atomowość, niezmienność kursów i autoryzację; zapis i odczyt sprawdzono w przeglądarce.
 
-- podręczny kupon na ekranie wydarzeń,
+- wiele prostych kuponów na ekranie wydarzeń; kliknięcie boksu wybiera aktywny,
 - jeden wybór na wydarzenie,
 - automatyczny kurs łączny,
-- zapis wersji roboczej,
+- automatyczny zapis po dodaniu pierwszego typu i kolejnych zmianach; bez przycisków zapisu i zamknięcia,
+- stawka i potencjalna wygrana, przycisk dodania kolejnego kuponu,
 - lista, edycja i usuwanie własnych kuponów,
 - zapis `odds_at_add` dla każdej pozycji.
 
 Kryterium ukończenia: zapisany kupon zachowuje swoje kursy nawet po zmianie kursów wydarzenia.
+
+Aktualizacja 2026-10-28: automatycznie zapisywane kupony i wybór aktywnego boksu, puste kupony pozostają zapisane. Niepuste kupony są rozliczane od razu; migracja zachowuje dotychczasowe dane.
 
 ## Etap 6 — wyniki i rozliczanie
 
@@ -108,3 +111,29 @@ Kryterium ukończenia: aplikacja działa w chmurze bez ręcznego codziennego uru
 - jasny i ciemny motyw oraz ekran ustawień z zapamiętywaniem preferencji w przeglądarce.
 
 Etapy 7 i 8 pozostają poza zakresem.
+
+## Zmiana założeń kont — 2026-10-27
+
+- publiczny formularz `/register` z rejestracją przez Supabase Auth, logowaniem i obsługą potwierdzenia e-maila,
+- usunięcie skryptu zakładającego właściciela i rezygnacja z modelu jednego konta,
+- zachowanie izolacji kuponów użytkowników przez istniejące RLS,
+- ujednolicenie importów do aliasów `@lib/…`, `@components/…` i `@app/…` oraz opis roli Dockera i konwencji Next.js.
+
+Weryfikacja: lint, TypeScript, formatowanie i build. Sprawdzenie interfejsu wykonuje użytkownik.
+
+## Układ meczów — 2026-10-27
+
+- uproszczone etykiety i nagłówki; usunięte slogany oraz informacje o importach z interfejsu,
+- grupowanie po lidze i sortowanie godziną wewnątrz grup,
+- osobne kolumny drużyn, wynik pośrodku, pełna forma W/D/L z tooltipami i dane tabeli,
+- podsumowanie H2H z rozwijaną historią, kursy na dole karty.
+
+Kontrola: lint, TypeScript, formatowanie i build. Ręczne sprawdzenie UI wykonuje użytkownik.
+
+## Filtrowanie kursów — 2026-10-27
+
+- usunięty nagłówek i osobny formularz daty oraz filtry ligi, drużyny i statusu,
+- wybór daty w pasku filtrów z natychmiastową nawigacją i ponownym odczytem danych,
+- warunki dla dowolnego typu: zakres włącznie z granicami, `<`, `≤`, `>`, `≥`, `=`,
+- wiele warunków łączonych jako wszystkie lub dowolny, obsługa liczb z przecinkiem i kropką, walidacja zakresu i brakujących kursów,
+- filtrowanie kursów po stronie interfejsu bez kolejnych zapytań do bazy.

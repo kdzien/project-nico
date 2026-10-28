@@ -1,4 +1,4 @@
-import { ResultsFailure } from "./results.js";
+import { ResultsFailure } from "@lib/collector/results";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 export async function withImportRun<T>(
