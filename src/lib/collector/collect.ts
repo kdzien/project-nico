@@ -1,3 +1,4 @@
+import { competitionMetadata } from "@lib/collector/competition";
 import { eventStatus } from "@lib/collector/status";
 import { MeczykiClient } from "@lib/collector/meczyki-client";
 import { doubleChance, roundOdds } from "@lib/odds";
@@ -200,6 +201,7 @@ export async function collectMatches(
 		const finishedH2h = h2h.filter((item) => item.status === "finished");
 
 		collected.push({
+			...competitionMetadata(match.competition),
 			status: eventStatus(match.status),
 			match_id: match.id,
 			kickoff: match.startTime,
@@ -208,6 +210,12 @@ export async function collectMatches(
 			home: {
 				participant_id: match.homeParticipant.id,
 				name: match.homeParticipant.displayName,
+				slug: match.homeParticipant.slug ?? null,
+				country: match.homeParticipant.country?.displayName ?? null,
+				logo_source_url:
+					match.homeParticipant.hasFetchedImage === false
+						? null
+						: client.teamLogoUrl(match.homeParticipant.id),
 				table: homeCompetition
 					? tableEntry(
 							homeStandings,
@@ -222,6 +230,12 @@ export async function collectMatches(
 			away: {
 				participant_id: match.awayParticipant.id,
 				name: match.awayParticipant.displayName,
+				slug: match.awayParticipant.slug ?? null,
+				country: match.awayParticipant.country?.displayName ?? null,
+				logo_source_url:
+					match.awayParticipant.hasFetchedImage === false
+						? null
+						: client.teamLogoUrl(match.awayParticipant.id),
 				table: awayCompetition
 					? tableEntry(
 							awayStandings,

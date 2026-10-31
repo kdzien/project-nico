@@ -119,6 +119,8 @@ Filtrowanie działa od razu podczas wpisywania. Liczby przyjmują przecinek lub 
 
 Karta pokazuje gospodarza po lewej, gościa po prawej i wynik pośrodku. Pod nazwami znajdują się kwadraty W/D/L z całą zapisaną historią, od najnowszego meczu. Najazd lub ustawienie fokusu na kwadracie pokazuje datę, drużyny i dokładny wynik. Pozycja i punkty ligowe są pokazane skrótowo obok nazwy drużyny, jeśli zapisano tabelę.
 
+Na górze listy są ligi poziomu 1–2 i puchary z wybranych krajów: Polski, Anglii, Niemiec, Francji, Hiszpanii, Portugalii, Holandii, Belgii, Turcji, Włoch, Szkocji, Austrii i Szwajcarii. Wszystkie pozostałe rozgrywki nadal widać poniżej. W obu grupach kolejność pochodzi z `competition.displayOrder` Meczyków, z nazwą jako rozstrzygnięciem remisu. Nagłówek grupy zawiera kraj; identyczne nazwy pucharów nie łączą już różnych rozgrywek. Kraj, poziom, typ i identyfikatory rozgrywek są zapisywane przez importer w bazie i eksportach JSON.
+
 Sekcja H2H jest obecnie ukryta; dane nadal są pobierane i zapisywane. Karta nie powtarza nazwy ligi, ról drużyn ani wiersza statusu. Kursy i wybór pozycji do kuponu znajdują się na dole karty.
 
 ## Kupony
@@ -145,15 +147,15 @@ Sprawdzenie wyłącznie wydarzeń zapisanych pod konkretnym dniem:
 TARGET_DATE=2026-10-27 npm run results
 ```
 
-Ten wariant pobiera listę tylko wskazanego dnia. Bez `TARGET_DATE` sprawdzane są także zaległości. Przyszłe dni są pomijane. Podsumowanie pokazuje liczbę sprawdzonych, zaktualizowanych, rozliczonych i nieznalezionych wydarzeń.
+Ten wariant pobiera listę tylko wskazanego dnia. Bez `TARGET_DATE` sprawdzane są także zaległości. Przyszłe dni są pomijane. Podsumowanie pokazuje liczbę sprawdzonych, zaktualizowanych, rozliczonych i nieznalezionych wydarzeń oraz rozliczonych pozycji i całych kuponów.
 
-Każde wydarzenie wraz z odpowiadającymi mu pozycjami i kuponami jest aktualizowane transakcyjnie. Zadanie można bezpiecznie ponawiać; nie nadpisuje rozliczonych wyników. Awaria jednego pobrania nie blokuje pozostałych, ale całe uruchomienie otrzyma status błędu i zachowa liczniki postępu w `import_runs`.
+Po zapisaniu wyników proces zawsze rozlicza kupony w osobnej transakcji: najpierw oczekujące pozycje na podstawie zapisanych wyników, następnie całe kupony. Dotyczy to również wyników zapisanych wcześniej i uruchomień bez nowych wydarzeń. Zadanie można bezpiecznie ponawiać; nie nadpisuje rozliczonych wyników. Awaria jednego pobrania nie blokuje pozostałych, ale całe uruchomienie otrzyma status błędu i zachowa liczniki postępu w `import_runs`.
 
 - Wynik dotyczy regulaminowego czasu: pola `home_regular_time_score` i `away_regular_time_score` z `attributes`. Ogólny wynik jest używany wyłącznie przy jawnym `withOvertime: false` i braku pól regulaminowych.
 - Anulowanie: zwrot pozycji, mnożnik `1.00` w kursie łącznym; `odds_at_add` pozostaje zachowany.
 - Przełożenie, nieznany status lub niepełny wynik: pozycja oczekuje na kolejne pobranie, bez automatycznego anulowania po upływie czasu.
-- Kupon przegrywa po przegranej dowolnej pozycji; znacznik zakończenia pojawia się dopiero po rozliczeniu wszystkich pozycji. Wszystkie zwroty dają status zwrotu; wygrane i zwroty dają wygraną.
-- Wersje robocze nie są rozliczane. Zmiana już utrwalonego wyniku wymaga osobnej, świadomej procedury korekty; zwykły import go nie zmienia.
+- Każda pozycja ma własny wynik: wygrana, przegrana albo zwrot. Dopóki choć jedna czeka na wynik, kupon pozostaje oczekujący na ekranie meczów. Po rozliczeniu wszystkich pozycji otrzymuje wynik końcowy: dowolna przegrana → przegrany; wygrane bez przegranych → wygrany; same zwroty → zwrot. Rozliczony kupon znika z ekranu meczów i pozostaje w **Moich kuponach**. Potencjalna wygrana kuponu z przegraną pozycją wynosi 0.
+- Puste kupony nie są rozliczane. Zmiana już utrwalonego wyniku wymaga osobnej, świadomej procedury korekty; zwykły import go nie zmienia.
 
 Etapy 7 i 8 nie zostały wdrożone: procesy importu oraz wyników uruchamiasz ręcznie, bez harmonogramu i wdrożenia chmurowego.
 
@@ -189,3 +191,43 @@ Aliasy w `tsconfig.json` działają w Next.js bez dodatkowego pluginu: `@lib/*` 
 | `src/lib`                   | Wspólna logika, klient bazy i tłumaczenia                               |
 
 Komponenty App Routera domyślnie wykonują się na serwerze. `"use client"` oznacza komponent interaktywny, który może korzystać ze stanu i zdarzeń w przeglądarce. To główna różnica względem typowego komponentu Angulara wykonywanego w przeglądarce.
+
+## Statystyki
+
+Widok **Statystyki** (`/statistics`) pokazuje własne zapisane kupony: łączne stawki, wypłaty z wygranych, bilans rozliczonych kuponów, oczekujące stawki i zwroty. Wygrane zawierają stawkę; bilans to wygrane + zwroty − stawki rozliczonych kuponów. Puste kupony i drafty są pomijane. Kupony bez stawki nie wpływają na kwoty, ale ich rozliczone pozycje nadal liczą się do trafności. Usunięte kupony nie są uwzględniane.
+
+Wykres bilansu pokazuje skumulowany wynik po dniach rozliczenia (Europe/Warsaw); najedź lub ustaw fokus na punkcie, aby odczytać kwotę. Drugi wykres przełącza trafność według typów, przedziałów utrwalonych kursów i rozgrywek. Procent to wygrane / (wygrane + przegrane), z liczbą trafień/prób przy każdej grupie. Zwroty i oczekujące nie zwiększają mianownika. Rozgrywki prezentują do 10 grup z największą liczbą rozliczonych pozycji, z rozdzieleniem krajów. Wykresy działają lokalnie, bez usług zewnętrznych.
+
+## Drużyny i herby
+
+Drużyny mają stałe ID z Meczyków (`participant.id`). Aplikacja przechowuje je w `teams` wraz z własnym UUID, a mecze wskazują gospodarza i gościa przez klucze obce. Zmiana nazwy nie tworzy nowej drużyny; drużyny o jednakowych nazwach nie są łączone.
+
+`npm run collect` zapisuje metadane drużyn i pobiera brakujące małe herby WebP. Każdy herb jest przechowywany tylko raz, przy drużynie; istniejące herby są pomijane. CDN-owe braki są sprawdzane ponownie po tygodniu. Herby są wyświetlane obok nazw na liście meczów i kuponach i działają z lokalnej bazy bez internetu.
+
+Migracja automatycznie wiąże także wcześniejsze wydarzenia po ID zapisanych w ich statystykach. Aby uzupełnić herby bez ponownego pobierania meczów, uruchom:
+
+```bash
+npm run teams:sync
+```
+
+Binaria są małe (przykładowy herb około 1 KB, limit 64 KiB) i trafiają do PostgreSQL, więc nie potrzebujesz dodatkowego Storage. JSON-y zachowują ID uczestników i linki źródłowe, bez kopii binariów.
+
+## Wyniki na żywo co 5–10 minut
+
+Uruchom samodzielnie w drugim terminalu:
+
+```bash
+npm run results:watch
+```
+
+Pierwszy import rusza od razu. Po każdym zakończonym przebiegu losowana jest nowa przerwa: od 5 do 10 pełnych minut. Proces pobiera wyniki, zapisuje bieżący wynik i minutę, a po końcu meczów rozlicza pozycje i kupony. Kolejny przebieg zaczyna się po zakończeniu poprzedniego i odczekaniu wylosowanej przerwy, więc uruchomienia się nie nakładają. Po błędzie proces loguje problem i próbuje znów w następnym terminie. Zatrzymaj przez Ctrl+C; trwający import może się dokończyć. Nie instaluje się żaden autostart ani usługa. Bez TARGET_DATE dzień jest wyznaczany na nowo w każdym przebiegu.
+
+Na wydarzeniach oraz kuponach zobaczysz bieżący wynik, „Trwa”, minutę z ostatniego odczytu. Na karcie wydarzenia minuta zastępuje godzinę rozpoczęcia; informacja „Sprawdzono” nie jest wyświetlana. Minuta nie przesuwa się sama między importami. Przerwa i karne mają osobne etykiety. Dane widoków są odczytywane co minutę z lokalnej bazy, bez przeładowania strony i bez bezpośrednich zapytań przeglądarki do Meczyków. W ukrytej karcie odczyt jest wstrzymany. Rozliczone kupony znikają z widoku meczów automatycznie.
+
+Bieżące gole są oddzielone od końcowego wyniku regulaminowego, żeby nie rozliczać typów w trakcie meczu ani na podstawie wyniku po dogrywce/karnych. Dotychczasowe `npm run results` nadal wykonuje pojedynczy przebieg.
+
+W widoku **Moje kupony** pozycje każdego kuponu są uporządkowane rosnąco według terminu wydarzenia.
+
+W **Moich kuponach** statusy pozycji i całych kuponów pokazują ikony: szaro-żółty zegar (oczekujący), zielony ptaszek (trafiony), czerwony krzyżyk (nietrafiony), minus (zwrot). Przerywana obwódka i mały zegar wyróżniają tymczasową ocenę meczu live; opis jest dostępny po najechaniu i dla czytnika ekranu. To wyłącznie bieżąca ocena, bez przedwczesnego rozliczenia. Dla dogrywki/karnych nie oceniamy rynku regulaminowego na podstawie wyniku live.
+
+Kupony nie mają osobnego tytułu. Edycja i usuwanie są przyciskami z ikonami w nagłówku; status kuponu jest w prawym górnym rogu. Podsumowanie zawiera kurs, stawkę i potencjalną wygraną. W pozycjach termin jest małym chipsem przy drużynach, a wynik pomiędzy nazwami. Tabele na kartach wydarzeń są wyrównane w małych chipsach i pokazywane wyłącznie dla lig, nigdy pucharów.

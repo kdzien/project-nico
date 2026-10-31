@@ -17,6 +17,8 @@
 		"db:status": "supabase status",
 		"db:reset": "supabase db reset",
 		"results": "tsx scripts/results.ts",
+		"results:watch": "tsx scripts/results-watch.ts",
+		"teams:sync": "tsx scripts/sync-team-logos.ts",
 		"db:migrate": "supabase migration up",
 		"format": "prettier --write .",
 		"format:check": "prettier --check ."

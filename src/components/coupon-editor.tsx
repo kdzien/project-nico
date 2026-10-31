@@ -1,8 +1,10 @@
 "use client";
 
+import { MatchProgress } from "@components/live-results";
+import { TeamLogo } from "@components/team-logo";
 import { useEffect, useRef, useState } from "react";
 import { clearCoupon, deleteCoupon, saveCoupon } from "@app/coupons/actions";
-import { combinedOdds } from "@lib/coupons";
+import { combinedOdds, potentialWinnings } from "@lib/coupons";
 import type { MessageKey } from "@lib/i18n";
 import { useI18n } from "@lib/i18n/provider";
 import type { CouponDraft } from "@lib/models";
@@ -17,6 +19,7 @@ export function CouponEditor({
 	onDeleted,
 	onCleared,
 	onBusy,
+	onSaved,
 	actionsDisabled,
 	asOf,
 }: {
@@ -29,11 +32,13 @@ export function CouponEditor({
 	onDeleted: () => void;
 	onCleared: () => void;
 	onBusy: (busy: boolean) => void;
+	onSaved: (key: string, id: string) => void;
 	actionsDisabled: boolean;
 	asOf: number;
 }) {
-	const { t, formatNumber, formatCurrency } = useI18n();
+	const { t, formatNumber, formatCurrency, statusLabel } = useI18n();
 	const savedId = useRef(draft.id);
+	const queuedVersion = useRef("");
 	const queue = useRef(Promise.resolve());
 	const [error, setError] = useState<MessageKey | "">("");
 	const [retry, setRetry] = useState(0);
@@ -47,7 +52,13 @@ export function CouponEditor({
 	const validCombined = Number.isFinite(combined) && combined < 1e10;
 
 	useEffect(() => {
-		if (busy || !draft.revision || !validStake || !validCombined) {
+		if (
+			busy ||
+			!draft.revision ||
+			!validStake ||
+			!validCombined ||
+			queuedVersion.current === `${draft.revision}:${retry}`
+		) {
 			return;
 		}
 		let current = true;
@@ -56,6 +67,7 @@ export function CouponEditor({
 				if (operation.current) {
 					return;
 				}
+				queuedVersion.current = `${draft.revision}:${retry}`;
 				queue.current = queue.current.then(async () => {
 					try {
 						const result = await saveCoupon({
@@ -70,6 +82,7 @@ export function CouponEditor({
 						});
 						if (result.id) {
 							savedId.current = result.id;
+							onSaved(draft.key, result.id);
 						}
 						if (current) {
 							setError(result.message);
@@ -87,7 +100,7 @@ export function CouponEditor({
 			current = false;
 			clearTimeout(timer);
 		};
-	}, [draft, stake, validStake, validCombined, retry, busy]);
+	}, [draft, stake, validStake, validCombined, retry, busy, onSaved]);
 
 	function mutate(kind: "clear" | "delete") {
 		if (operation.current || actionsDisabled || (kind === "delete" && !canDelete)) {
@@ -140,8 +153,22 @@ export function CouponEditor({
 				{draft.items.map((item) => (
 					<li key={item.event_id}>
 						<div className="draft-match">
-							<span>
-								{item.event.home_team} – {item.event.away_team}
+							<span className="coupon-team-names">
+								<span>
+									<TeamLogo
+										teamId={item.event.home_team_id}
+										hash={item.event.home_team_record?.logo_hash ?? null}
+									/>
+									{item.event.home_team}
+								</span>
+								<span>–</span>
+								<span>
+									<TeamLogo
+										teamId={item.event.away_team_id}
+										hash={item.event.away_team_record?.logo_hash ?? null}
+									/>
+									{item.event.away_team}
+								</span>
 							</span>
 							<button
 								type="button"
@@ -160,8 +187,16 @@ export function CouponEditor({
 								×
 							</button>
 						</div>
+						<MatchProgress event={item.event} showScore />
 						<div className="draft-line">
-							<span>{item.selection}</span>
+							<span>
+								{item.selection}
+								{item.result && item.result !== "pending" && (
+									<span className={`coupon-item-result result-${item.result}`}>
+										{statusLabel(item.result)}
+									</span>
+								)}
+							</span>
 							<span>{formatNumber(item.odds_at_add)}</span>
 						</div>
 					</li>
@@ -187,7 +222,7 @@ export function CouponEditor({
 					<span>{t("coupon.potentialWin")}</span>
 					<span>
 						{draft.items.length && validStake && stake !== null && validCombined
-							? formatCurrency(stake * combined)
+							? formatCurrency(potentialWinnings(draft.items, stake))
 							: "—"}
 					</span>
 				</div>

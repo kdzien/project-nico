@@ -15,6 +15,7 @@ export function AppHeader() {
 			<nav aria-label={t("nav.main")}>
 				<Link href="/">{t("nav.events")}</Link>
 				<Link href="/coupons">{t("nav.coupons")}</Link>
+				<Link href="/statistics">{t("nav.statistics")}</Link>
 				<Link href="/settings">{t("nav.settings")}</Link>
 				<form action={logout}>
 					<button className="secondary">{t("nav.logout")}</button>

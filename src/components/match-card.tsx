@@ -1,5 +1,7 @@
 "use client";
 
+import { MatchClock, MatchProgress } from "@components/live-results";
+import { displayedScore } from "@lib/live-results";
 import { memo } from "react";
 import { selections, type EventRow, type Selection } from "@lib/models";
 import { winningSelections } from "@lib/odds";
@@ -17,8 +19,8 @@ export const MatchCard = memo(function MatchCard({
 	asOf: number;
 	onChoose: (event: EventRow, selection: Selection) => void;
 }) {
-	const { t, formatDate, formatNumber } = useI18n();
-	const hasScore = event.home_score !== null && event.away_score !== null;
+	const { t, formatNumber } = useI18n();
+	const score = displayedScore(event);
 	const winners =
 		event.status === "finished" ? winningSelections(event.home_score, event.away_score) : [];
 	const available = event.status === "scheduled" && Date.parse(event.kickoff) > asOf;
@@ -29,24 +31,37 @@ export const MatchCard = memo(function MatchCard({
 			aria-label={`${event.home_team} – ${event.away_team}`}
 		>
 			<div className="match-overview">
-				<MatchTeam name={event.home_team} team={event.statistics.home} side="home" />
+				<MatchTeam
+					name={event.home_team}
+					team={event.statistics.home}
+					side="home"
+					teamId={event.home_team_id}
+					logoHash={event.home_team_record?.logo_hash ?? null}
+					showStandings={event.competition_type === "league"}
+				/>
 				<div className="match-center">
-					<time dateTime={event.kickoff}>
-						{formatDate(event.kickoff, { hour: "2-digit", minute: "2-digit" })}
-					</time>
+					<MatchClock event={event} />
 					<div className="match-score" aria-label={t("match.score")}>
-						{hasScore ? (
+						{score ? (
 							<>
-								{event.home_score}
+								{score[0]}
 								<span>:</span>
-								{event.away_score}
+								{score[1]}
 							</>
 						) : (
 							<span>—</span>
 						)}
 					</div>
+					<MatchProgress event={event} showMinute={false} />
 				</div>
-				<MatchTeam name={event.away_team} team={event.statistics.away} side="away" />
+				<MatchTeam
+					name={event.away_team}
+					team={event.statistics.away}
+					side="away"
+					teamId={event.away_team_id}
+					logoHash={event.away_team_record?.logo_hash ?? null}
+					showStandings={event.competition_type === "league"}
+				/>
 			</div>
 			<div className="odds-grid">
 				{selections.map((pick) => {

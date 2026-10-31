@@ -12,6 +12,7 @@ const resultSchema = z.object({
 	homeScore: score.optional(),
 	awayScore: score.optional(),
 	withOvertime: z.boolean().optional(),
+	minute: z.union([z.number().int().nonnegative(), z.string(), z.null()]).optional(),
 	attributes: z
 		.array(z.object({ type: z.string(), value: z.union([z.string(), z.number(), z.null()]) }))
 		.optional(),
@@ -38,12 +39,21 @@ export function matchResult(raw: unknown) {
 		home = match.homeScore ?? null;
 		away = match.awayScore ?? null;
 	}
+	const rawMinute =
+		match.minute === null || match.minute === undefined
+			? ""
+			: String(match.minute).trim().replace(/[′']$/, "");
+	const minute = /^\d{1,3}(?:\+\d{1,2})?$/.test(rawMinute) ? rawMinute : null;
 	return {
 		id: match.id,
 		status,
 		home: status === "finished" ? home : null,
 		away: status === "finished" ? away : null,
 		kickoff: match.startTime,
+		liveHome: ["live", "finished"].includes(status) ? (match.homeScore ?? null) : null,
+		liveAway: ["live", "finished"].includes(status) ? (match.awayScore ?? null) : null,
+		minute: status === "live" ? minute : null,
+		phase: status === "live" ? match.status : null,
 	};
 }
 
@@ -67,6 +77,10 @@ interface ResultCandidate {
 	external_id: number;
 	kickoff: string;
 	status: string;
+	live_home_score: number | null;
+	live_away_score: number | null;
+	match_minute: string | null;
+	match_phase: string | null;
 }
 
 export async function refreshResults(
@@ -83,7 +97,9 @@ export async function refreshResults(
 	for (let offset = 0; ; offset += 500) {
 		let query = db
 			.from("events")
-			.select("id,external_id,kickoff,status")
+			.select(
+				"id,external_id,kickoff,status,live_home_score,live_away_score,match_minute,match_phase",
+			)
 			.eq("provider", "meczyki")
 			.is("settled_at", null)
 			.lt("kickoff", dayBounds(today)[1]);
@@ -137,17 +153,28 @@ export async function refreshResults(
 				(result.status === "finished" && result.home !== null && result.away !== null);
 			const changed =
 				result.status !== candidate.status ||
-				Date.parse(result.kickoff) !== Date.parse(candidate.kickoff);
+				Date.parse(result.kickoff) !== Date.parse(candidate.kickoff) ||
+				result.liveHome !== candidate.live_home_score ||
+				result.liveAway !== candidate.live_away_score ||
+				result.minute !== candidate.match_minute ||
+				result.phase !== candidate.match_phase;
 			// Keep pending fixtures pending, without writing the same status on every run.
-			if (result.status === "unknown" || (!terminal && !changed)) {
+			if (
+				result.status === "unknown" ||
+				(!terminal && !changed && result.status !== "live")
+			) {
 				continue;
 			}
-			const update = await db.rpc("settle_event", {
+			const update = await db.rpc("record_match_result", {
 				p_event_id: candidate.id,
 				p_status: result.status,
 				p_home: result.home,
 				p_away: result.away,
 				p_kickoff: result.kickoff,
+				p_live_home: result.liveHome,
+				p_live_away: result.liveAway,
+				p_minute: result.minute,
+				p_phase: result.phase,
 			});
 			if (update.error) {
 				throw new Error(update.error.message);
@@ -162,11 +189,39 @@ export async function refreshResults(
 			);
 		}
 	}
+	// Always reconcile coupons, including earlier saved scores and partially failed imports.
+	let itemsSettled = 0;
+	let couponsSettled = 0;
+	const settlement = await db.rpc("settle_coupons");
+	if (settlement.error) {
+		errors.push(`Rozliczanie kuponów: ${settlement.error.message}`);
+	} else {
+		const summary = z
+			.object({
+				items_settled: z.number().int().nonnegative(),
+				coupons_settled: z.number().int().nonnegative(),
+			})
+			.safeParse(settlement.data);
+		if (!summary.success) {
+			errors.push("Niepoprawne podsumowanie rozliczenia kuponów.");
+		} else {
+			itemsSettled = summary.data.items_settled;
+			couponsSettled = summary.data.coupons_settled;
+		}
+	}
 	if (errors.length) {
 		throw new ResultsFailure(errors.join("; ").slice(0, 2000), candidates.length, updated);
 	}
 	return {
-		value: { checked: candidates.length, updated, settled, missing, days: dates.size },
+		value: {
+			checked: candidates.length,
+			updated,
+			settled,
+			missing,
+			days: dates.size,
+			itemsSettled,
+			couponsSettled,
+		},
 		found: candidates.length,
 		saved: updated,
 	};

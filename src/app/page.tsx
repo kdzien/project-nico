@@ -4,7 +4,7 @@ import { AppHeader } from "@components/app-header";
 import type { Coupon } from "@lib/models";
 import { requireUser } from "@lib/supabase/server";
 import { calendarDate, validDate } from "@lib/dates";
-import { loadEvents } from "@lib/events";
+import { eventColumns, loadEvents } from "@lib/events";
 import { EventsBoard } from "@components/events-board";
 
 export default async function HomePage({
@@ -22,15 +22,17 @@ export default async function HomePage({
 	for (let offset = 0; ; offset += 100) {
 		const { data, error } = await db
 			.from("coupons")
-			.select("*,coupon_items(*,events(*))")
+			.select(`*,coupon_items(*,events(${eventColumns}))`)
 			.in("status", ["draft", "placed"])
+			.is("settled_at", null)
 			.order("created_at")
 			.order("id")
-			.range(offset, offset + 99);
+			.range(offset, offset + 99)
+			.overrideTypes<Coupon[], { merge: false }>();
 		if (error) {
 			throw new Error("Nie udało się odczytać kuponów.");
 		}
-		coupons.push(...(data as Coupon[]));
+		coupons.push(...data);
 		if (data.length < 100) {
 			break;
 		}

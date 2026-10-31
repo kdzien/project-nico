@@ -1,4 +1,10 @@
-import type { ApiMatch, ApiOdds, ApiResponse } from "@lib/collector/types";
+import type {
+	ApiMatch,
+	ApiMatchesData,
+	ApiOdds,
+	ApiResponse,
+	TeamLogo,
+} from "@lib/collector/types";
 
 const API_BASE = "https://api.meczyki.pl/api/v2/soccer";
 
@@ -35,12 +41,12 @@ export class MeczykiClient {
 		await scheduled;
 	}
 
-	private async get<T>(path: string): Promise<T> {
+	private async request(url: string, allowMissing = false): Promise<Response> {
 		for (let attempt = 0; ; attempt++) {
 			await this.waitForRequestSlot();
 			let response: Response;
 			try {
-				response = await fetch(`${API_BASE}${path}`, {
+				response = await fetch(url, {
 					headers: {
 						accept: "application/json",
 						"user-agent": "meczyki-daily-collector/1.0",
@@ -54,10 +60,10 @@ export class MeczykiClient {
 				await sleep(1000 * 2 ** attempt);
 				continue;
 			}
-			if (response.ok) {
-				return (await response.json()) as T;
+			if (response.ok || (allowMissing && response.status === 404)) {
+				return response;
 			}
-			const error = new Error(`HTTP ${response.status} dla ${path}`);
+			const error = new Error(`HTTP ${response.status} dla ${url}`);
 			if ((response.status !== 429 && response.status < 500) || attempt >= this.retries) {
 				throw error;
 			}
@@ -72,6 +78,64 @@ export class MeczykiClient {
 		}
 	}
 
+	private async get<T>(path: string): Promise<T> {
+		const response = await this.request(`${API_BASE}${path}`);
+		return (await response.json()) as T;
+	}
+
+	teamLogoUrl(participantId: number): string {
+		if (!Number.isSafeInteger(participantId) || participantId <= 0) {
+			throw new Error("Niepoprawne ID drużyny.");
+		}
+		return `https://pliki.meczyki.pl/live-score/soccer/participant/${participantId}/50w.webp`;
+	}
+
+	async getTeamLogo(participantId: number): Promise<TeamLogo | null> {
+		const response = await this.request(this.teamLogoUrl(participantId), true);
+		if (response.status === 404) {
+			await response.body?.cancel();
+			return null;
+		}
+		const reader = response.body?.getReader();
+		if (!reader) {
+			throw new Error("Brak danych herbu.");
+		}
+		const chunks: Uint8Array[] = [];
+		let size = 0;
+		try {
+			for (;;) {
+				const { done, value } = await reader.read();
+				if (done) {
+					break;
+				}
+				size += value.length;
+				if (size > 65536) {
+					await reader.cancel();
+					throw new Error("Herb przekracza limit 64 KiB.");
+				}
+				chunks.push(value);
+			}
+		} finally {
+			reader.releaseLock();
+		}
+		const data = new Uint8Array(size);
+		let offset = 0;
+		for (const chunk of chunks) {
+			data.set(chunk, offset);
+			offset += chunk.length;
+		}
+		// The CDN can label WebP as application/octet-stream; validate the actual signature.
+		const signature = new TextDecoder("ascii");
+		if (
+			size < 12 ||
+			signature.decode(data.subarray(0, 4)) !== "RIFF" ||
+			signature.decode(data.subarray(8, 12)) !== "WEBP"
+		) {
+			throw new Error("Niepoprawny format herbu; oczekiwano WebP.");
+		}
+		return { data };
+	}
+
 	async getMatches(date: string, perPage = 20): Promise<ApiMatch[]> {
 		const matches: ApiMatch[] = [];
 
@@ -82,17 +146,23 @@ export class MeczykiClient {
 				page: String(page),
 				matches_per_page: String(perPage),
 			});
-			const response = await this.get<ApiResponse<ApiMatch[]>>(
+			const response = await this.get<ApiResponse<ApiMatchesData>>(
 				`/matches-by-competition/all?${query}`,
 			);
-			for (const match of response.data) {
+			const pageMatches = Array.isArray(response.data)
+				? response.data
+				: response.data?.matches;
+			if (!Array.isArray(pageMatches)) {
+				throw new Error("API zwróciło niepoprawną listę meczów: brak data.matches.");
+			}
+			for (const match of pageMatches) {
 				if (seen.has(match.id)) {
 					throw new Error("API powtórzyło mecz na kolejnej stronie; import przerwany.");
 				}
 				seen.add(match.id);
 				matches.push(match);
 			}
-			if (response.data.length < perPage) {
+			if (pageMatches.length < perPage) {
 				return matches;
 			}
 		}

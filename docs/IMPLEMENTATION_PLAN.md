@@ -137,3 +137,80 @@ Kontrola: lint, TypeScript, formatowanie i build. Ręczne sprawdzenie UI wykonuj
 - warunki dla dowolnego typu: zakres włącznie z granicami, `<`, `≤`, `>`, `≥`, `=`,
 - wiele warunków łączonych jako wszystkie lub dowolny, obsługa liczb z przecinkiem i kropką, walidacja zakresu i brakujących kursów,
 - filtrowanie kursów po stronie interfejsu bez kolejnych zapytań do bazy.
+
+## Aktualizacja 2026-10-28 — metadane i kolejność rozgrywek
+
+Status: ukończony. Migracja wdrożona lokalnie; usunięto i ponownie zaimportowano 163 wydarzenia na 2026-10-28. Żadne usuwane wydarzenie nie należało do kuponu. Odczyt bazy potwierdził 91 wydarzeń w preferowanych rozgrywkach i 72 pozostałe; wszystkie mają ID rozgrywek, a 5 spotkań towarzyskich nie ma kraju w API. Lint, TypeScript, formatowanie i build przechodzą.
+
+- zapis kraju, ID/sluga rozgrywek, typu, poziomu i kolejności API w `events` oraz JSON,
+- migracja `202610280003_competition_metadata.sql`,
+- preferowane kraje: PL, Anglia, DE, FR, ES, PT, NL, BE, TR, IT, Szkocja, AT, CH; poziomy ligowe 1–2 i puchary,
+- pozostałe rozgrywki poniżej, bez ukrywania i ograniczania importu,
+- grupowanie po ID rozgrywek i kraj w nagłówku.
+
+Etapy 7–8 pozostają poza zakresem.
+
+## Aktualizacja 2026-10-28 — rozliczanie kuponów po imporcie wyników
+
+Status: ukończony. Migracja wdrożona lokalnie. Uruchomienie `npm run results` sprawdziło 191 wydarzeń, zaktualizowało 53 i zapisało 29 wyników końcowych. Obecne 5 kuponów ma 10 oczekujących pozycji, więc pozostają aktywne. Lint, TypeScript, formatowanie i build przechodzą.
+
+- `results` zapisuje wyniki wydarzeń i zawsze uruchamia `settle_coupons`, również dla wcześniej zapisanych wyników,
+- niezależny wynik każdej pozycji: won/lost/void,
+- pending ma pierwszeństwo w statusie kuponu; przegrana pojedynczego typu nie usuwa kuponu, który jeszcze czeka na inne wydarzenia,
+- końcowy status i `settled_at` dopiero po rozliczeniu wszystkich pozycji,
+- rozliczone kupony tylko w „Moich kuponach”, oznaczenia rozliczonych pozycji także w aktywnym boksie,
+- potencjalna wygrana przy przegranej pozycji wynosi 0,
+- migracja `202610280004_coupon_settlement.sql` naprawia również dotychczasowe częściowo rozliczone kupony.
+
+## Aktualizacja 2026-10-29 — widok statystyk
+
+Status: ukończony. Agregację odczytano na zapisanych kuponach; lint, TypeScript, formatowanie i build przechodzą. Ręczne sprawdzenie wyglądu pozostaje po stronie właściciela.
+
+- chroniony widok `/statistics` i link w nawigacji,
+- własne finanse: suma stawek, wygrane brutto, bilans rozliczonych kuponów, zwroty i oczekujące stawki,
+- historia skumulowanego bilansu według dnia rozliczenia,
+- wykres trafności według typu, przedziału utrwalonego kursu i rozgrywek, zawsze z liczbą prób,
+- stronicowany, ograniczony do potrzebnych pól odczyt przez RLS, brak dodatkowych usług i zależności,
+- obsługa pustych danych, PL/EN, jasnego i ciemnego motywu.
+
+Etapy 7–8 pozostają poza zakresem.
+
+## Aktualizacja 2026-10-31 — drużyny i herby
+
+Status: ukończony. Migracja wdrożona lokalnie, wszystkie wcześniejsze wydarzenia mają powiązania drużyn. Uzupełniono 735 herbów (995 524 B, bez błędów). Import jednego rzeczywistego meczu na 2026-10-31 zakończył się poprawnie; ponowne uzupełnienie dwóch zapisanych herbów pobrało 0 B. Lint, TypeScript, formatowanie i build przechodzą.
+
+- tabela teams ze stabilnym UUID i unikalnym ID dostawcy, RLS i zapisem wyłącznie przez importer,
+- klucze obce home_team_id / away_team_id oraz uzupełnienie relacji istniejących wydarzeń po zapisanym participant_id,
+- mały herb WebP 50 px zapisany raz na drużynę w lokalnej bazie, z limitem 64 KiB i hashem,
+- wspólne opóźnienia/retry, cache braków HTTP 404, błędy herbów nie blokują importu meczów,
+- automatyczne uzupełnianie podczas collect i osobne teams:sync dla dotychczasowych drużyn,
+- lokalny endpoint obrazów i herby przy nazwach drużyn na kartach oraz kuponach, bez zależności od internetu przy odczycie.
+
+Etapy 7–8 pozostają poza zakresem.
+
+## Aktualizacja 2026-10-31 — ręcznie uruchamiana pętla wyników i widok live
+
+Status: ukończony. Migracja wdrożona lokalnie, parser zweryfikowany odczytem rzeczywistego meczu live (wynik 2:2, minuta 69; wynik do końcowego rozliczenia pozostaje null). Lint, TypeScript, formatowanie i build przechodzą. Nie uruchomiono procesu results:watch ani cyklicznego harmonogramu.
+
+- komenda results:watch z losową przerwą 5–10 minut po każdym przebiegu, wspólny przebieg z results, bez nakładania i autostartu,
+- obsługa błędów, zmiany dnia oraz Ctrl+C/SIGTERM,
+- osobne pola bieżących goli, minuty, fazy i godziny sprawdzenia,
+- bezpieczny zapis wyniku końcowego i rozliczanie dopiero po zakończeniu,
+- etykieta live i migawka wyniku na wydarzeniach oraz kuponach,
+- mały odczyt wyników z lokalnej bazy co minutę, bez resetowania edycji i bez zapytań UI do Meczyków,
+- automatyczne usunięcie rozliczonego boksu z widoku meczów.
+
+Procesu cyklicznego agent nie uruchamia. Harmonogram systemowy, wdrożenie i pozostałe działania etapów 7–8 pozostają poza zakresem.
+
+Aktualizacja: odstępy results:watch są losowane osobno po każdym zakończonym przebiegu (5–10 pełnych minut), a pozycje w widoku kuponów są sortowane rosnąco po terminie meczu. Pętli nie uruchamiano.
+
+## Aktualizacja — układ kuponów i wydarzeń
+
+Status: ukończony. Lint, TypeScript, formatowanie i build przechodzą. Ręczne sprawdzenie wyglądu pozostaje po stronie właściciela.
+
+- ikony wyników pozycji i całych kuponów, w tym odrębne stany tymczasowe live bez zmiany rozliczania,
+- wynik pomiędzy drużynami, termin w chipsie, potencjalna wygrana w podsumowaniu,
+- usunięty tytuł kuponu, ikonowe akcje w nagłówku,
+- usunięte „Sprawdzono”, minuta live zamiast godziny wydarzenia,
+- wyrównane wiersze nazw/tabeli/formy; tabela tylko dla wydarzeń ligowych,
+- obsługa PL/EN, obu motywów, małych ekranów i opisów dostępności ikon.

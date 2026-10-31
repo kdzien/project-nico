@@ -21,3 +21,12 @@ export function combinedOdds(items: { odds_at_add: number; result?: string }[]):
 		1,
 	);
 }
+
+export function potentialWinnings(
+	items: { odds_at_add: number; result?: string }[],
+	stake: number,
+): number {
+	return !items.length || items.some((item) => item.result === "lost")
+		? 0
+		: stake * combinedOdds(items);
+}

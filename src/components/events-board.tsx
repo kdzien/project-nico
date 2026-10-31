@@ -1,7 +1,11 @@
 "use client";
+import { useResultsPolling } from "@components/live-results";
+import { mergeEventResult, type EventResult } from "@lib/live-results";
 import { useI18n } from "@lib/i18n/provider";
 import { useCallback, useMemo, useOptimistic, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { combinedOdds, potentialWinnings } from "@lib/coupons";
+import { compareCompetitions, competitionKey } from "@lib/competitions";
 import { validDate } from "@lib/dates";
 import {
 	matchesOddsFilters,
@@ -27,7 +31,7 @@ export function EventsBoard({
 	selectedCouponId: string | undefined;
 	asOf: number;
 }) {
-	const { t, locale } = useI18n();
+	const { t, locale, formatCurrency } = useI18n();
 	const router = useRouter();
 	const searchParams = useSearchParams();
 	const [pending, startTransition] = useTransition();
@@ -77,9 +81,106 @@ export function EventsBoard({
 					},
 				],
 	);
+	const [liveResults, setLiveResults] = useState<EventResult[]>([]);
+	const displayEvents = useMemo(() => {
+		const updates = new Map(liveResults.map((result) => [result.id, result]));
+		return events.map((event) => mergeEventResult(event, updates.get(event.id)));
+	}, [events, liveResults]);
+	useResultsPolling(
+		[
+			...events.map((event) => event.id),
+			...drafts.flatMap((draft) => draft.items.map((item) => item.event_id)),
+		],
+		drafts.flatMap((draft) => (draft.id ? [draft.id] : [])),
+		(snapshot) => {
+			const emptyKey = crypto.randomUUID();
+			setLiveResults((current) =>
+				JSON.stringify(current) === JSON.stringify(snapshot.events)
+					? current
+					: snapshot.events,
+			);
+			const updatedEvents = new Map(snapshot.events.map((result) => [result.id, result]));
+			const updatedCoupons = new Map(snapshot.coupons.map((coupon) => [coupon.id, coupon]));
+			setDrafts((current) => {
+				let changed = false;
+				const next = current.flatMap((draft) => {
+					const saved = draft.id ? updatedCoupons.get(draft.id) : undefined;
+					if (saved?.settled_at) {
+						changed = true;
+						return [];
+					}
+					let draftChanged = false;
+					const items = draft.items.map((item) => {
+						const event = mergeEventResult(
+							item.event,
+							updatedEvents.get(item.event_id),
+						);
+						const savedItem = saved?.coupon_items.find(
+							(value) =>
+								value.event_id === item.event_id &&
+								value.selection === item.selection,
+						);
+						const result = savedItem?.result ?? item.result;
+						if (event === item.event && result === item.result) {
+							return item;
+						}
+						draftChanged = true;
+						return { ...item, event, ...(result !== undefined ? { result } : {}) };
+					});
+					changed ||= draftChanged;
+					return [draftChanged ? { ...draft, items } : draft];
+				});
+				if (!next.length) {
+					return [
+						{
+							key: emptyKey,
+							id: null,
+							name: t("coupon.defaultName"),
+							stake: "",
+							items: [],
+							revision: 0,
+							change: "items",
+						},
+					];
+				}
+				return changed ? next : current;
+			});
+		},
+	);
+	const markPersisted = useCallback((key: string, id: string) => {
+		setDrafts((current) =>
+			current.some((draft) => draft.key === key && draft.id !== id)
+				? current.map((draft) => (draft.key === key ? { ...draft, id } : draft))
+				: current,
+		);
+	}, []);
 	const [activeKey, setActiveKey] = useState(selectedCouponId ?? coupons[0]?.id ?? "new");
 	const [busyKey, setBusyKey] = useState<string | null>(null);
-	const activeDraft = drafts.find((draft) => draft.key === activeKey);
+	const activeDraft = drafts.find((draft) => draft.key === activeKey) ?? drafts[0];
+	const selectedKey = activeDraft?.key ?? activeKey;
+	const totals = useMemo(() => {
+		let stake = 0;
+		let winnings = 0;
+		for (const draft of drafts) {
+			if (!draft.items.length) {
+				continue;
+			}
+			const amount = Number(draft.stake.replace(",", "."));
+			const odds = combinedOdds(draft.items);
+			if (
+				!Number.isFinite(amount) ||
+				amount < 0 ||
+				amount > 9999999999.99 ||
+				!Number.isFinite(odds) ||
+				odds >= 1e10
+			) {
+				return null;
+			}
+			stake += amount;
+			winnings += potentialWinnings(draft.items, amount);
+		}
+		return { stake, winnings };
+	}, [drafts]);
 
 	function updateDraft(key: string, update: Partial<Pick<CouponDraft, "items" | "stake">>) {
 		setDrafts((current) =>
@@ -118,7 +219,7 @@ export function EventsBoard({
 			const quote = event.odds[selection];
 			if (
 				pending ||
-				busyKey === activeKey ||
+				busyKey === selectedKey ||
 				!quote ||
 				event.status !== "scheduled" ||
 				Date.parse(event.kickoff) <= asOf
@@ -127,7 +228,7 @@ export function EventsBoard({
 			}
 			setDrafts((current) =>
 				current.map((draft) => {
-					if (draft.key !== activeKey) {
+					if (draft.key !== selectedKey) {
 						return draft;
 					}
 					const selected = draft.items.some(
@@ -153,19 +254,22 @@ export function EventsBoard({
 				}),
 			);
 		},
-		[activeKey, asOf, pending, busyKey],
+		[selectedKey, asOf, pending, busyKey],
 	);
 	const { visible, competitions } = useMemo(() => {
 		const conditions = rules.flatMap((rule) => {
 			const { condition } = parseOddsRule(rule);
 			return condition ? [condition] : [];
 		});
-		const visible = events.filter((event) => matchesOddsFilters(event.odds, conditions, mode));
+		const visible = displayEvents.filter((event) =>
+			matchesOddsFilters(event.odds, conditions, mode),
+		);
 		const groups = new Map<string, EventRow[]>();
 		for (const event of visible) {
-			const matches = groups.get(event.competition) ?? [];
+			const key = competitionKey(event);
+			const matches = groups.get(key) ?? [];
 			matches.push(event);
-			groups.set(event.competition, matches);
+			groups.set(key, matches);
 		}
 		for (const matches of groups.values()) {
 			matches.sort(
@@ -174,9 +278,11 @@ export function EventsBoard({
 		}
 		return {
 			visible,
-			competitions: [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, locale)),
+			competitions: [...groups.entries()].sort(([, a], [, b]) =>
+				compareCompetitions(a[0]!, b[0]!, locale),
+			),
 		};
-	}, [events, rules, mode, locale]);
+	}, [displayEvents, rules, mode, locale]);
 	const selectedPicks = useMemo(
 		() => new Map(activeDraft?.items.map((item) => [item.event_id, item.selection]) ?? []),
 		[activeDraft],
@@ -209,14 +315,23 @@ export function EventsBoard({
 					/>
 				</div>
 				<div className="league-list" aria-busy={pending}>
-					{competitions.map(([competition, matches]) => (
+					{competitions.map(([key, matches]) => (
 						<section
 							className="league-group"
-							key={competition}
-							aria-label={competition}
+							key={key}
+							aria-label={[matches[0]!.competition, matches[0]!.country]
+								.filter(Boolean)
+								.join(" · ")}
 						>
 							<header className="league-heading">
-								<h2>{competition}</h2>
+								<h2>
+									{matches[0]!.competition}
+									{matches[0]!.country && (
+										<span className="league-country">
+											{matches[0]!.country}
+										</span>
+									)}
+								</h2>
 								<span aria-label={t("h2h.count", { count: matches.length })}>
 									{matches.length}
 								</span>
@@ -242,11 +357,22 @@ export function EventsBoard({
 				)}
 			</section>
 			<aside className="coupon-sidebar">
+				<dl className="coupons-totals" aria-live="polite">
+					<div>
+						<dt>{t("coupons.totalStake")}</dt>
+						<dd>{totals ? formatCurrency(totals.stake) : "—"}</dd>
+					</div>
+					<div>
+						<dt>{t("coupons.totalWinnings")}</dt>
+						<dd>{totals ? formatCurrency(totals.winnings) : "—"}</dd>
+					</div>
+				</dl>
 				{drafts.map((draft) => (
 					<CouponEditor
 						key={draft.key}
 						draft={draft}
-						active={draft.key === activeKey}
+						active={draft.key === selectedKey}
+						onSaved={markPersisted}
 						activate={() => setActiveKey(draft.key)}
 						remove={(id) =>
 							updateDraft(draft.key, {

@@ -28,7 +28,7 @@ async function main() {
 					const db = importerClient();
 					return withImportRun(db, "events", date, async () => {
 						const value = await collect();
-						await new SupabaseRepository(db).save(value);
+						await new SupabaseRepository(db, client).save(value);
 						return { value, found: value.matches.length, saved: value.matches.length };
 					});
 				})();

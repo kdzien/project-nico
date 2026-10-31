@@ -28,10 +28,13 @@ function matchOutcome(match: RecentMatch, teamName: string): "W" | "D" | "L" | n
 	return ownScore > opponentScore ? "W" : "L";
 }
 
-export function TeamForm({ matches, teamName }: { matches: RecentMatch[]; teamName: string }) {
+export function TeamForm({ matches, teamName, side }: { matches: RecentMatch[]; teamName: string; side: "home" | "away" }) {
 	const { t, formatDate } = useI18n();
 	const id = useId();
-	const history = [...matches].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+	let history = [...matches].sort((a, b) => Date.parse(b.date) - Date.parse(a.date));
+	if (side === "home") {
+		history = history.reverse();
+	}
 
 	if (!history.length) {
 		return (
@@ -45,15 +48,6 @@ export function TeamForm({ matches, teamName }: { matches: RecentMatch[]; teamNa
 		<div className="team-form" role="group" aria-label={t("form.label", { team: teamName })}>
 			{history.map((match) => {
 				const outcome = matchOutcome(match, teamName);
-				const result = t(
-					outcome === "W"
-						? "form.win"
-						: outcome === "D"
-							? "form.draw"
-							: outcome === "L"
-								? "form.loss"
-								: "form.unknown",
-				);
 				const tooltipId = `${id}-${match.match_id}`;
 
 				return (
@@ -61,7 +55,6 @@ export function TeamForm({ matches, teamName }: { matches: RecentMatch[]; teamNa
 						<button
 							type="button"
 							className={`form-tile form-${outcome ?? "unknown"}`}
-							aria-label={result}
 							aria-describedby={tooltipId}
 						>
 							{outcome ?? "—"}
@@ -75,7 +68,6 @@ export function TeamForm({ matches, teamName }: { matches: RecentMatch[]; teamNa
 							<strong>
 								{match.home} {match.score ?? "—"} {match.away}
 							</strong>
-							<span>{result}</span>
 						</span>
 					</span>
 				);

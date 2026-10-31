@@ -2,6 +2,13 @@ export interface ApiResponse<T> {
 	data: T;
 }
 
+export type ApiMatchesData =
+	| ApiMatch[]
+	| {
+			matches: ApiMatch[];
+			hasLiveMatches?: boolean;
+	  };
+
 export interface NamedEntity {
 	id: number;
 	displayName: string;
@@ -9,9 +16,17 @@ export interface NamedEntity {
 
 export interface Competition extends NamedEntity {
 	hasStandings?: boolean;
+	slug?: string | null;
+	type?: string | null;
+	countryGameLevel?: number | null;
+	displayOrder?: number | null;
+	country?: (NamedEntity & { slug?: string | null }) | null;
 }
 
 export interface Participant extends NamedEntity {
+	slug?: string | null;
+	country?: NamedEntity | null;
+	hasFetchedImage?: boolean;
 	competition?: Competition | null;
 	competitionPosition?: number | null;
 }
@@ -22,6 +37,7 @@ export interface ApiMatch {
 	normalizedSeason: number;
 	status: string;
 	withOvertime?: boolean;
+	minute?: number | string | null;
 	attributes?: { type: string; value: string | number | null }[];
 	competition: Competition;
 	bracketRound?: { displayName: string } | null;
@@ -57,11 +73,25 @@ export interface TableEntry {
 export interface CollectedTeam {
 	participant_id: number;
 	name: string;
+	slug?: string | null;
+	country?: string | null;
+	logo_source_url?: string | null;
 	table: TableEntry | null;
 	last_matches: RecentMatch[];
 }
 
-export interface CollectedMatch {
+export interface CompetitionMetadata {
+	competition_id: number | null;
+	competition_slug: string | null;
+	competition_type: string | null;
+	competition_level: number | null;
+	competition_display_order: number | null;
+	country_id: number | null;
+	country: string | null;
+	country_slug: string | null;
+}
+
+export interface CollectedMatch extends CompetitionMetadata {
 	status: string;
 	match_id: number;
 	kickoff: string;
@@ -94,4 +124,8 @@ export interface CollectionDocument {
 	timezone: string;
 	generated_at: string;
 	matches: CollectedMatch[];
+}
+
+export interface TeamLogo {
+	data: Uint8Array;
 }

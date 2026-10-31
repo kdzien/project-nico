@@ -17,6 +17,9 @@
 	--form-red: #b73f4b;
 	--form-yellow: #dfba55;
 	--tooltip-background: #222b30;
+	--chart-won: #66bf8c;
+	--chart-lost: #cc7d88;
+	--chart-line: #a8c4d1;
 	--h2h-home: #b4cb8c;
 	--h2h-away: #9ab0cb;
 }
@@ -39,6 +42,9 @@
 	--form-red: #b73f4b;
 	--form-yellow: #dfba55;
 	--tooltip-background: #fff;
+	--chart-won: #287a47;
+	--chart-lost: #b73f4b;
+	--chart-line: #365d74;
 	--h2h-home: #456720;
 	--h2h-away: #3d607d;
 }
@@ -267,6 +273,29 @@ summary {
 	max-height: calc(100dvh - 48px);
 	overflow-y: auto;
 }
+.coupons-totals {
+	margin: 0 0 4px;
+	padding: 0 2px;
+	display: grid;
+	gap: 8px;
+	font-size: 0.72rem;
+}
+.coupons-totals > div {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 12px;
+}
+.coupons-totals dt {
+	color: var(--muted);
+}
+.coupons-totals dd {
+	margin: 0;
+	font-size: 0.85rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	text-align: right;
+}
 .coupon-editor {
 	border: 1px solid var(--border);
 	border-radius: 8px;
@@ -307,6 +336,9 @@ summary {
 	color: var(--muted);
 	font-size: 0.7rem;
 	margin-top: 6px;
+}
+.coupon-item-result {
+	margin-left: 8px;
 }
 .coupon-summary {
 	border-top: 1px solid var(--border);
@@ -374,33 +406,6 @@ summary {
 .coupon-list {
 	display: grid;
 	gap: 24px;
-}
-.saved-items {
-	list-style: none;
-	padding: 0;
-}
-.saved-items li {
-	display: flex;
-	gap: 24px;
-	align-items: center;
-	padding: 16px 0;
-	border-top: 1px solid var(--border);
-	font-size: 0.9rem;
-}
-.saved-items li > div {
-	flex: 1;
-	display: grid;
-	gap: 7px;
-}
-.coupon-actions,
-.delete-form {
-	display: flex;
-	gap: 16px;
-	align-items: center;
-	flex-wrap: wrap;
-}
-.coupon-actions {
-	justify-content: space-between;
 }
 .button-link {
 	background: var(--accent);
@@ -522,13 +527,6 @@ summary {
 		flex-wrap: wrap;
 		justify-content: end;
 	}
-	.saved-items li {
-		flex-wrap: wrap;
-		gap: 12px;
-	}
-	.saved-items li > div {
-		flex-basis: 100%;
-	}
 	.shell {
 		padding-top: 56px;
 	}
@@ -586,6 +584,12 @@ summary {
 	font-size: 1rem;
 	letter-spacing: -0.02em;
 }
+.league-country {
+	margin-left: 10px;
+	color: var(--muted);
+	font-size: 0.7rem;
+	font-weight: 400;
+}
 .league-heading > span {
 	color: var(--muted);
 	background: var(--odd-background);
@@ -637,9 +641,6 @@ summary {
 	font-variant-numeric: tabular-nums;
 	white-space: nowrap;
 }
-.team-ranking-divider {
-	opacity: 0.6;
-}
 .match-center {
 	display: grid;
 	justify-items: center;
@@ -689,7 +690,6 @@ summary {
 	line-height: 1;
 	font-weight: 800;
 	color: #fff;
-	cursor: help;
 }
 .form-W {
 	background: var(--form-green);
@@ -1091,4 +1091,615 @@ summary {
 		width: 52px;
 		padding-inline: 4px;
 	}
+}
+
+.statistics-finances h2,
+.statistics-analysis h2 {
+	margin: 0 0 18px;
+	font-size: 1rem;
+	font-weight: 500;
+}
+.statistics-metrics {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	gap: 16px;
+	margin: 0;
+}
+.statistics-metrics > div {
+	padding: 22px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.statistics-metrics dt {
+	color: var(--muted);
+	font-size: 0.75rem;
+}
+.statistics-metrics dd {
+	margin: 14px 0 0;
+	font-size: clamp(1.4rem, 2.6vw, 2rem);
+	font-weight: 600;
+	letter-spacing: -0.04em;
+	font-variant-numeric: tabular-nums;
+	overflow-wrap: anywhere;
+}
+.statistics-positive,
+.statistics-balance[data-state="positive"] dd {
+	color: var(--chart-won);
+}
+.statistics-balance[data-state="negative"] dd {
+	color: var(--danger);
+}
+.statistics-facts {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px 36px;
+	margin: 20px 0 12px;
+}
+.statistics-facts > div {
+	display: flex;
+	gap: 10px;
+	align-items: baseline;
+	font-size: 0.75rem;
+}
+.statistics-facts dt {
+	color: var(--muted);
+}
+.statistics-facts dd {
+	margin: 0;
+	font-variant-numeric: tabular-nums;
+}
+.statistics-note {
+	margin: 8px 0 0;
+	color: var(--muted);
+	font-size: 0.7rem;
+	line-height: 1.6;
+}
+.statistics-analysis {
+	margin-top: 42px;
+}
+.statistics-charts {
+	display: grid;
+	grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+	gap: 20px;
+	align-items: start;
+}
+.statistics-chart-panel {
+	min-width: 0;
+	padding: 22px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface);
+}
+.statistics-chart-panel h3 {
+	margin: 0 0 20px;
+	font-size: 0.9rem;
+	font-weight: 500;
+}
+.balance-chart-detail {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 12px;
+	font-size: 0.75rem;
+	color: var(--muted);
+}
+.balance-chart-detail strong {
+	font-size: 1.15rem;
+	font-variant-numeric: tabular-nums;
+}
+.balance-chart-scroll {
+	overflow-x: auto;
+	margin-top: 16px;
+}
+.balance-chart {
+	display: block;
+	width: 100%;
+	min-width: 420px;
+	height: auto;
+	overflow: visible;
+}
+.balance-chart text {
+	fill: var(--muted);
+	font-family: inherit;
+	font-size: 14px;
+}
+.chart-grid {
+	stroke: var(--border);
+	stroke-width: 1;
+	stroke-dasharray: 3 5;
+}
+.chart-zero {
+	stroke: var(--muted);
+	stroke-width: 1;
+	stroke-opacity: 0.5;
+}
+.chart-balance-line {
+	fill: none;
+	stroke: var(--chart-line);
+	stroke-width: 3;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.chart-guide {
+	stroke: var(--chart-line);
+	stroke-width: 1;
+	stroke-opacity: 0.35;
+	stroke-dasharray: 3 5;
+}
+.chart-point {
+	fill: var(--chart-line);
+	stroke: var(--surface);
+	stroke-width: 2;
+}
+.statistics-chart-tabs {
+	display: flex;
+	gap: 4px;
+	margin-bottom: 22px;
+}
+.statistics-chart-tabs button {
+	padding: 7px 12px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: var(--muted);
+	font-size: 0.75rem;
+	font-weight: 400;
+}
+.statistics-chart-tabs button[aria-pressed="true"] {
+	background: var(--odd-background);
+	color: var(--text);
+}
+.performance-chart {
+	display: grid;
+	gap: 18px;
+}
+.performance-row {
+	display: grid;
+	grid-template-columns: minmax(75px, 0.75fr) minmax(0, 1fr) 66px;
+	gap: 12px;
+	align-items: center;
+	font-size: 0.75rem;
+}
+.performance-label {
+	line-height: 1.4;
+	overflow-wrap: anywhere;
+}
+.performance-track {
+	display: flex;
+	height: 10px;
+	overflow: hidden;
+	border-radius: 4px;
+	background: var(--odd-background);
+}
+.performance-won {
+	background: var(--chart-won);
+}
+.performance-lost {
+	background: var(--chart-lost);
+}
+.performance-value {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+.performance-value small {
+	display: block;
+	margin-top: 3px;
+	color: var(--muted);
+	font-size: 0.65rem;
+}
+.performance-legend {
+	display: flex;
+	gap: 16px;
+	margin: 22px 0 12px;
+	color: var(--muted);
+	font-size: 0.65rem;
+}
+.performance-legend > span {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+}
+.performance-legend i {
+	width: 7px;
+	height: 7px;
+	border-radius: 2px;
+}
+.statistics-chart-empty {
+	display: grid;
+	place-items: center;
+	min-height: 200px;
+	color: var(--muted);
+	text-align: center;
+	font-size: 0.8rem;
+}
+@media (max-width: 1000px) {
+	.statistics-charts {
+		grid-template-columns: 1fr;
+	}
+}
+@media (max-width: 640px) {
+	.statistics-metrics {
+		grid-template-columns: 1fr;
+		gap: 10px;
+	}
+	.statistics-metrics > div {
+		padding: 18px;
+	}
+	.statistics-metrics dd {
+		margin-top: 10px;
+		font-size: 1.7rem;
+	}
+	.statistics-chart-panel {
+		padding: 16px;
+	}
+}
+
+.team-heading h3 {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+.team-logo {
+	width: 24px;
+	height: 24px;
+	object-fit: contain;
+	flex-shrink: 0;
+}
+
+.coupon-team-names,
+.coupon-team-names > span {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	flex-wrap: wrap;
+}
+.coupon-team-names .team-logo {
+	width: 16px;
+	height: 16px;
+}
+
+.match-progress {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 4px 7px;
+	margin-top: 5px;
+	color: var(--muted);
+	font-size: 0.65rem;
+	line-height: 1.4;
+}
+.match-progress strong {
+	color: var(--text);
+	font-variant-numeric: tabular-nums;
+}
+.match-progress-live > span {
+	color: var(--chart-won);
+}
+.match-center .match-progress {
+	justify-content: center;
+	gap: 2px 5px;
+	font-size: 0.6rem;
+}
+
+/* Shared rows keep team names, league standings and form aligned on both sides. */
+.match-overview {
+	grid-template-rows: auto auto auto;
+	column-gap: 14px;
+	row-gap: 6px;
+	align-items: stretch;
+}
+.match-team {
+	display: grid;
+	grid-row: 1 / 4;
+	grid-template-rows: subgrid;
+	row-gap: 6px;
+}
+.match-team-home {
+	grid-column: 1;
+}
+.match-team-away {
+	grid-column: 3;
+}
+.match-center {
+	grid-column: 2;
+	grid-row: 1 / 4;
+	align-self: center;
+}
+.team-heading {
+	align-items: center;
+	margin-bottom: 0;
+}
+.team-standing-row {
+	display: flex;
+	align-items: center;
+	min-width: 0;
+}
+.match-team-away .team-standing-row {
+	justify-content: flex-end;
+}
+.team-ranking {
+	gap: 5px;
+}
+.team-standing-chip {
+	padding: 3px 6px;
+	border-radius: 5px;
+	background: var(--odd-background);
+	color: var(--muted);
+	font-size: 0.64rem;
+	line-height: 1.2;
+	font-variant-numeric: tabular-nums;
+}
+.match-clock-live {
+	font-size: 0.75rem;
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--chart-won);
+}
+.result-symbol {
+	--result-color: var(--muted);
+	display: inline-flex;
+	width: 28px;
+	height: 28px;
+	flex-shrink: 0;
+	color: var(--result-color);
+}
+.result-symbol svg {
+	width: 100%;
+	height: 100%;
+	stroke: currentColor;
+	stroke-width: 1.7;
+	stroke-linecap: round;
+	stroke-linejoin: round;
+}
+.result-symbol-ring {
+	fill: color-mix(in srgb, var(--result-color) 12%, transparent);
+}
+.result-symbol-won {
+	--result-color: var(--chart-won);
+}
+.result-symbol-lost {
+	--result-color: var(--chart-lost);
+}
+.result-symbol-pending {
+	--result-color: var(--warning);
+}
+.result-symbol-pending .result-symbol-ring {
+	stroke: var(--muted);
+}
+.result-symbol-provisional .result-symbol-ring {
+	fill: none;
+	stroke-dasharray: 3 3;
+}
+.result-symbol-clock circle {
+	fill: var(--surface);
+	stroke-width: 1.4;
+}
+.result-symbol-clock path {
+	stroke-width: 1.2;
+}
+.saved-coupon {
+	padding: 18px 22px;
+}
+.saved-coupon-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+}
+.saved-coupon-header > time {
+	color: var(--muted);
+	font-size: 0.75rem;
+}
+.saved-coupon-actions {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.saved-coupon-actions > .result-symbol {
+	margin-left: 6px;
+}
+.coupon-icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 32px;
+	height: 32px;
+	padding: 7px;
+	border: 1px solid var(--border);
+	border-radius: 7px;
+	background: transparent;
+	color: var(--muted);
+}
+.coupon-icon-button svg {
+	width: 17px;
+	height: 17px;
+}
+.coupon-icon-button:hover {
+	background: var(--odd-background);
+	color: var(--text);
+}
+.coupon-icon-danger:hover {
+	color: var(--danger);
+}
+.delete-coupon-control {
+	position: relative;
+}
+.delete-coupon-popover {
+	position: absolute;
+	right: 0;
+	top: calc(100% + 8px);
+	z-index: 5;
+	display: grid;
+	gap: 12px;
+	width: 250px;
+	padding: 16px;
+	border: 1px solid var(--border);
+	border-radius: 10px;
+	background: var(--surface);
+	box-shadow: 0 10px 30px color-mix(in srgb, var(--background) 60%, transparent);
+	font-size: 0.8rem;
+}
+.delete-coupon-popover > div {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+.delete-coupon-popover button {
+	padding: 7px 10px;
+	font-size: 0.75rem;
+}
+.delete-coupon-popover p {
+	margin: 0;
+	font-size: 0.7rem;
+}
+.saved-coupon-metrics {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px 32px;
+	margin: 18px 0;
+}
+.saved-coupon-metrics > div {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+	font-size: 0.8rem;
+}
+.saved-coupon-metrics dt {
+	color: var(--muted);
+	font-size: 0.7rem;
+}
+.saved-coupon-metrics dd {
+	margin: 0;
+	font-variant-numeric: tabular-nums;
+}
+.saved-coupon-items {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+.saved-coupon-item {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) 28px;
+	align-items: center;
+	gap: 24px;
+	padding: 16px 0;
+	border-top: 1px solid var(--border);
+}
+.saved-coupon-item:last-child {
+	padding-bottom: 0;
+}
+.saved-coupon-item-content {
+	min-width: 0;
+}
+.coupon-item-meta {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.coupon-kickoff-chip,
+.coupon-selection-chip,
+.coupon-live-minute-chip {
+	padding: 4px 7px;
+	border-radius: 5px;
+	background: var(--odd-background);
+	color: var(--muted);
+	font-size: 0.65rem;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+.coupon-fixture {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr);
+	align-items: center;
+	gap: 12px;
+}
+.coupon-fixture > .coupon-item-meta {
+	justify-self: start;
+}
+.coupon-fixture-team {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-width: 0;
+	font-size: 0.86rem;
+	font-weight: 500;
+	line-height: 1.4;
+}
+.coupon-fixture-team > span {
+	overflow-wrap: anywhere;
+}
+.coupon-fixture-away {
+	justify-content: flex-end;
+	text-align: right;
+}
+.coupon-fixture-team .team-logo {
+	width: 22px;
+	height: 22px;
+}
+.coupon-fixture-result {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 7px;
+}
+.coupon-live-minute-chip .match-clock-live {
+	font-size: inherit;
+	font-weight: 500;
+}
+.coupon-fixture-score {
+	text-align: center;
+	font-size: 1.05rem;
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+}
+.coupon-fixture-score-live {
+	color: var(--chart-won);
+}
+@media (max-width: 560px) {
+	.match-overview {
+		column-gap: 8px;
+		row-gap: 5px;
+	}
+	.match-team {
+		row-gap: 5px;
+	}
+	.team-standing-chip {
+		padding: 2px 4px;
+		font-size: 0.58rem;
+	}
+	.saved-coupon {
+		padding: 14px;
+	}
+	.saved-coupon-metrics {
+		gap: 10px 18px;
+	}
+	.saved-coupon-item {
+		gap: 10px;
+	}
+	.coupon-fixture {
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		gap: 7px;
+	}
+	.coupon-fixture > .coupon-item-meta {
+		grid-column: 1 / -1;
+	}
+	.coupon-fixture-team {
+		font-size: 0.75rem;
+		gap: 5px;
+	}
+	.coupon-fixture-team .team-logo {
+		width: 18px;
+		height: 18px;
+	}
+	.coupon-fixture-score {
+		font-size: 0.9rem;
+	}
+}
+
+.coupon-fixture-score-live[data-result="lost"],
+.coupon-fixture-score-live[data-result="live-lost"],
+.match-clock-live.match-clock-late {
+	color: var(--danger);
 }
